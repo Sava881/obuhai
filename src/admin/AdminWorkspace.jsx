@@ -1432,9 +1432,6 @@ function togglePaidPeriod(periodId) {
     <div className="paid-periods-title">
       <span>РАССЧИТАННЫЕ ПЕРИОДЫ</span>
 
-      <p>
-        Свёрнуты и не мешают текущей работе
-      </p>
     </div>
 
     {paidPeriods.map((period) => {
