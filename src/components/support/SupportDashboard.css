@@ -1,0 +1,579 @@
+/* =====================================================
+   ОСНОВНАЯ ОБОЛОЧКА ТЕХПОДДЕРЖКИ
+===================================================== */
+
+.support-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  background: #f5f6fb;
+}
+
+.support-main {
+  min-width: 0;
+  padding: 0 34px 55px;
+}
+
+
+/* =====================================================
+   БОКОВАЯ ПАНЕЛЬ
+===================================================== */
+
+.support-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 28px 20px;
+
+  display: flex;
+  flex-direction: column;
+
+  color: #ffffff;
+  background: linear-gradient(
+    155deg,
+    #27105e,
+    #5b21b6 56%,
+    #1d4ed8
+  );
+}
+
+.support-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.support-brand > div {
+  width: 46px;
+  height: 46px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 15px;
+  color: #251047;
+  background: #facc15;
+  font-weight: 950;
+}
+
+.support-brand strong,
+.support-brand small {
+  display: block;
+}
+
+.support-brand small {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.support-user {
+  margin-top: auto;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.support-user span,
+.support-user strong {
+  display: block;
+}
+
+.support-user span {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.support-logout {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 13px;
+
+  color: #ffffff;
+  background: transparent;
+}
+
+
+/* =====================================================
+   ЗАГОЛОВОК СТРАНИЦЫ
+===================================================== */
+
+.support-header {
+  min-height: 126px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.support-header span,
+.administrator-profile span {
+  color: #6d28d9;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.support-header h1 {
+  margin: 6px 0;
+}
+
+.support-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.support-message {
+  margin: 20px 0;
+  padding: 14px;
+  border-radius: 13px;
+}
+
+.support-message.success {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.support-message.error {
+  color: #be123c;
+  background: #fff1f2;
+}
+
+
+/* =====================================================
+   ОБЩИЕ КАРТОЧКИ
+===================================================== */
+
+.support-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  gap: 20px;
+}
+
+.support-card,
+.administrator-profile,
+.workspace-summary,
+.support-client-card {
+  padding: 26px;
+  border: 1px solid #e5e7eb;
+  border-radius: 21px;
+  background: #ffffff;
+  box-shadow: 0 14px 42px rgba(30, 41, 59, 0.05);
+}
+
+
+/* =====================================================
+   ФОРМА ДОБАВЛЕНИЯ АДМИНИСТРАТОРА
+===================================================== */
+
+.support-card h2 {
+  margin-top: 0;
+}
+
+.support-card label {
+  display: grid;
+  gap: 7px;
+  margin-top: 15px;
+}
+
+.support-card input {
+  width: 100%;
+  padding: 13px;
+
+  border: 1px solid #d8dce6;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.support-card > button,
+.administrator-profile > button,
+.workspace-summary > button {
+  margin-top: 20px;
+  padding: 12px 15px;
+
+  border: 0;
+  border-radius: 12px;
+
+  color: #ffffff;
+  background: linear-gradient(135deg, #6d28d9, #2563eb);
+  font-weight: 900;
+}
+
+
+/* =====================================================
+   СПИСОК АДМИНИСТРАТОРОВ
+===================================================== */
+
+.administrator-list {
+  display: grid;
+  gap: 8px;
+}
+
+.administrator-row {
+  width: 100%;
+  padding: 12px;
+
+  border: 1px solid transparent;
+  border-radius: 13px;
+
+  background: transparent;
+  text-align: left;
+}
+
+.administrator-row strong,
+.administrator-row span,
+.administrator-row small {
+  display: block;
+}
+
+.administrator-row span {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.administrator-row small {
+  margin-top: 5px;
+
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.administrator-row.active {
+  border-color: #d9d1f4;
+  background: #f5f1ff;
+}
+
+
+/* =====================================================
+   РАБОЧАЯ ОБЛАСТЬ АДМИНИСТРАТОРА
+===================================================== */
+
+.support-workspace {
+  margin-top: 22px;
+}
+
+.administrator-profile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.administrator-profile h2 {
+  margin: 6px 0;
+}
+
+.administrator-profile p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.administrator-meta {
+  margin-top: 10px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.administrator-meta span {
+  padding: 7px 10px;
+
+  border-radius: 999px;
+
+  color: #5b21b6;
+  background: #f3efff;
+
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: normal;
+}
+
+.administrator-profile > button {
+  margin: 0;
+}
+
+
+/* =====================================================
+   СТАТИСТИКА
+===================================================== */
+
+.workspace-summary {
+  margin-top: 16px;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.workspace-summary span,
+.workspace-summary strong {
+  display: block;
+}
+
+.workspace-summary span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.workspace-summary strong {
+  margin-top: 6px;
+  font-size: 20px;
+}
+
+.workspace-summary > button {
+  margin: 0;
+}
+
+
+/* =====================================================
+   ЗАКАЗЧИКИ И ТАБЕЛИ
+===================================================== */
+
+.support-clients {
+  margin-top: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.support-client-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.support-client-card > header {
+  padding: 22px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.support-client-card header span {
+  color: #6d28d9;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.support-client-card h3 {
+  margin: 5px 0;
+}
+
+.support-client-card p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.support-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.support-client-card table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.support-client-card th,
+.support-client-card td {
+  padding: 13px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+
+/* =====================================================
+   ПЛАНШЕТЫ И МОБИЛЬНЫЕ УСТРОЙСТВА
+===================================================== */
+
+@media (max-width: 950px) {
+  .support-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .support-sidebar {
+    position: static;
+    height: auto;
+    padding: 18px;
+  }
+
+  .support-user {
+    margin-top: 18px;
+  }
+
+  .support-main {
+    padding: 0 16px 36px;
+  }
+
+  .support-header {
+    min-height: auto;
+    padding: 22px 0 18px;
+  }
+
+  .support-header h1 {
+    margin: 4px 0;
+    font-size: clamp(28px, 8vw, 36px);
+    line-height: 1.05;
+  }
+
+  .support-header p {
+    max-width: 340px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .support-grid {
+    margin-top: 18px;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .support-card,
+  .administrator-profile,
+  .workspace-summary,
+  .support-client-card {
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(30, 41, 59, 0.06);
+  }
+
+  .support-card {
+    padding: 20px;
+  }
+
+  .support-card h2 {
+    margin: 0 0 16px;
+    font-size: 23px;
+    line-height: 1.15;
+  }
+
+  .support-card label {
+    margin-top: 12px;
+    gap: 6px;
+  }
+
+  .support-card input {
+    min-height: 48px;
+    padding: 11px 13px;
+    font-size: 16px;
+  }
+
+  .support-card > button {
+    width: 100%;
+    min-height: 48px;
+    margin-top: 16px;
+  }
+
+  .administrator-list {
+    gap: 7px;
+  }
+
+  .administrator-row {
+    padding: 12px;
+  }
+
+  .support-workspace {
+    margin-top: 16px;
+  }
+
+  .administrator-profile {
+    padding: 18px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .administrator-profile > button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .workspace-summary {
+    margin-top: 14px;
+    padding: 18px;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .workspace-summary > button {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .workspace-summary strong {
+    font-size: 18px;
+  }
+
+  .support-clients {
+    margin-top: 14px;
+    gap: 14px;
+  }
+
+  .support-client-card > header {
+    padding: 18px;
+  }
+
+  .support-client-card h3 {
+    font-size: 19px;
+  }
+
+  .support-client-card p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .support-client-card table {
+    min-width: 470px;
+  }
+
+  .support-client-card th,
+  .support-client-card td {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+}
+
+
+/* =====================================================
+   УЗКИЕ МОБИЛЬНЫЕ ЭКРАНЫ
+===================================================== */
+
+@media (max-width: 520px) {
+  .support-main {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .support-header {
+    padding-top: 18px;
+  }
+
+  .support-card {
+    padding: 18px 16px;
+  }
+
+  .workspace-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workspace-summary > div:last-of-type {
+    grid-column: 1 / -1;
+  }
+
+  .support-client-card > header {
+    padding: 16px;
+  }
+
+  .support-client-card table {
+    min-width: 430px;
+  }
+
+  .support-client-card th,
+  .support-client-card td {
+    padding: 11px 14px;
+  }
+}

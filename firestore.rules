@@ -1,0 +1,79 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentProfile() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data;
+    }
+
+    function isActive() {
+      return signedIn()
+        && currentProfile().active == true;
+    }
+
+    function isSupport() {
+      return isActive()
+        && currentProfile().role == "support";
+    }
+
+    function isAdministrator() {
+      return isActive()
+        && currentProfile().role == "administrator";
+    }
+
+    match /users/{userId} {
+      // Каждый пользователь может загрузить свой профиль.
+      allow get: if signedIn()
+        && request.auth.uid == userId;
+
+      // Техподдержка видит всех администраторов.
+      allow list: if isSupport();
+
+      allow get: if isSupport();
+
+      // Техподдержка создаёт только администраторов.
+      allow create: if isSupport()
+        && request.resource.data.role == "administrator"
+        && request.resource.data.active == true
+        && request.resource.data.phone is string
+        && request.resource.data.name is string;
+
+      // Техподдержка может менять данные и доступ
+      // только у администратора.
+      allow update: if isSupport()
+        && resource.data.role == "administrator"
+        && request.resource.data.role == "administrator";
+
+      allow delete: if false;
+    }
+
+    match /workspaces/{userId} {
+      // Администратор видит только своё пространство.
+      // Техподдержка видит все пространства.
+      allow read: if isActive()
+        && (
+          request.auth.uid == userId
+          || isSupport()
+        );
+
+      // Техподдержка создаёт пустое пространство
+      // во время выдачи доступа.
+      allow create: if isSupport()
+        && request.resource.data.ownerId == userId;
+
+      // Администратор сохраняет только свои данные.
+      allow create, update: if isAdministrator()
+        && request.auth.uid == userId
+        && request.resource.data.ownerId == userId;
+
+      allow delete: if false;
+    }
+  }
+}
