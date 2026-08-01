@@ -676,19 +676,96 @@ function CommercialOffers({
   dispatcherName,
   flash
 }) {
+  const [expandedPeriods, setExpandedPeriods] =
+    useState({});
+
+  const [currentTimestamp, setCurrentTimestamp] =
+    useState(Date.now());
+
+  /*
+   * Обновляем текущее время раз в минуту.
+   * Благодаря этому записи автоматически
+   * переходят в архив спустя 24 часа.
+   */
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  function localDateKey(date) {
+    const year = date.getFullYear();
+
+    const month = String(
+      date.getMonth() + 1
+    ).padStart(2, "0");
+
+    const day = String(
+      date.getDate()
+    ).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatPeriodDate(value) {
+    if (!value) {
+      return "Без даты";
+    }
+
+    const parts = String(value).split("-");
+
+    if (parts.length !== 3) {
+      return value;
+    }
+
+    const [year, month, day] = parts;
+
+    return `${day}.${month}.${year}`;
+  }
+
+  function getOfferTimestamp(offer) {
+    if (offer.createdAt) {
+      const createdTimestamp =
+        new Date(offer.createdAt).getTime();
+
+      if (!Number.isNaN(createdTimestamp)) {
+        return createdTimestamp;
+      }
+    }
+
+    if (offer.date) {
+      const fallbackTimestamp =
+        new Date(
+          `${offer.date}T${
+            offer.time || "00:00"
+          }:00`
+        ).getTime();
+
+      if (!Number.isNaN(fallbackTimestamp)) {
+        return fallbackTimestamp;
+      }
+    }
+
+    return 0;
+  }
+
   function createOffer() {
     const now = new Date();
 
     const newOffer = {
       id: crypto.randomUUID(),
 
-      date: now
-        .toISOString()
-        .slice(0, 10),
+      date: localDateKey(now),
 
       time: now
         .toTimeString()
         .slice(0, 5),
+
+      createdAt: now.toISOString(),
 
       dispatcher: dispatcherName,
       company: "",
@@ -703,7 +780,7 @@ function CommercialOffers({
       ...currentOffers
     ]);
 
-    flash("Добавлена новая строка КП");
+    flash("Добавлен новый звонок");
   }
 
   function patchOffer(offerId, patch) {
@@ -719,15 +796,15 @@ function CommercialOffers({
     );
   }
 
-function deleteOffer(offerId) {
-  setOffers((currentOffers) =>
-    currentOffers.filter(
-      (offer) => offer.id !== offerId
-    )
-  );
+  function deleteOffer(offerId) {
+    setOffers((currentOffers) =>
+      currentOffers.filter(
+        (offer) => offer.id !== offerId
+      )
+    );
 
-  flash("Запись КП удалена");
-}
+    flash("Запись КП удалена");
+  }
 
   function statusClass(status) {
     if (status === "Интересуется") {
@@ -798,6 +875,265 @@ function deleteOffer(offerId) {
     );
   }
 
+  /*
+   * Записи моложе 24 часов остаются
+   * в группе «Текущие звонки».
+   *
+   * Более старые записи группируются
+   * отдельно по календарным датам.
+   */
+  const twentyFourHours =
+    24 * 60 * 60 * 1000;
+
+  const currentOffers = [];
+  const archivedMap = {};
+
+  offers.forEach((offer) => {
+    const offerTimestamp =
+      getOfferTimestamp(offer);
+
+    const offerAge =
+      currentTimestamp - offerTimestamp;
+
+    if (
+      offerTimestamp > 0 &&
+      offerAge < twentyFourHours
+    ) {
+      currentOffers.push(offer);
+      return;
+    }
+
+    const dateKey =
+      offer.date || "without-date";
+
+    if (!archivedMap[dateKey]) {
+      archivedMap[dateKey] = [];
+    }
+
+    archivedMap[dateKey].push(offer);
+  });
+
+  function sortOffers(items) {
+    return [...items].sort(
+      (first, second) =>
+        getOfferTimestamp(second) -
+        getOfferTimestamp(first)
+    );
+  }
+
+  const currentGroup = currentOffers.length
+    ? [
+        {
+          id: "current",
+          title: "Текущие звонки",
+          subtitle: "Записи за последние 24 часа",
+          items: sortOffers(currentOffers),
+          alwaysOpen: true
+        }
+      ]
+    : [];
+
+  const archivedGroups = Object.entries(
+    archivedMap
+  )
+    .sort(([firstDate], [secondDate]) =>
+      secondDate.localeCompare(firstDate)
+    )
+    .map(([date, items]) => {
+      const sortedItems =
+        sortOffers(items);
+
+      const times = sortedItems
+        .map((offer) => offer.time)
+        .filter(Boolean)
+        .sort();
+
+      const firstTime =
+        times[0] || "—";
+
+      const lastTime =
+        times[times.length - 1] || "—";
+
+      return {
+        id: date,
+        title:
+          date === "without-date"
+            ? "Без даты"
+            : formatPeriodDate(date),
+
+        subtitle:
+          firstTime === lastTime
+            ? `Время: ${firstTime}`
+            : `Период: ${firstTime}–${lastTime}`,
+
+        items: sortedItems,
+        alwaysOpen: false
+      };
+    });
+
+  const mobileGroups = [
+    ...currentGroup,
+    ...archivedGroups
+  ];
+
+  function togglePeriod(periodId) {
+    setExpandedPeriods((current) => ({
+      ...current,
+      [periodId]: !current[periodId]
+    }));
+  }
+
+  function renderOfferFields(offer) {
+    return (
+      <>
+        <div className="commercial-mobile-row">
+          <label>
+            <span>Дата</span>
+
+            <input
+              type="date"
+              value={offer.date || ""}
+              onChange={(event) =>
+                patchOffer(offer.id, {
+                  date: event.target.value
+                })
+              }
+            />
+          </label>
+
+          <label>
+            <span>Время</span>
+
+            <input
+              type="time"
+              value={offer.time || ""}
+              onChange={(event) =>
+                patchOffer(offer.id, {
+                  time: event.target.value
+                })
+              }
+            />
+          </label>
+        </div>
+
+        <div className="commercial-mobile-row">
+          <label>
+            <span>Компания</span>
+
+            <input
+              value={offer.company || ""}
+              placeholder="Название компании"
+              onChange={(event) =>
+                patchOffer(offer.id, {
+                  company: event.target.value
+                })
+              }
+            />
+          </label>
+
+          <label>
+            <span>Телефон</span>
+
+            <input
+              type="tel"
+              value={offer.phone || "+7"}
+              placeholder="+7 (900) 000-00-00"
+              maxLength={18}
+              onChange={(event) =>
+                patchOffer(offer.id, {
+                  phone: formatRussianPhone(
+                    event.target.value
+                  )
+                })
+              }
+            />
+          </label>
+        </div>
+
+        <label>
+          <span>Диспетчер</span>
+
+          <input
+            value={offer.dispatcher || ""}
+            onChange={(event) =>
+              patchOffer(offer.id, {
+                dispatcher: event.target.value
+              })
+            }
+          />
+        </label>
+
+        <label>
+          <span>Результат разговора</span>
+
+          <textarea
+            value={offer.result || ""}
+            placeholder="Что ответили"
+            rows={2}
+            onChange={(event) =>
+              patchOffer(offer.id, {
+                result: event.target.value
+              })
+            }
+          />
+        </label>
+
+        <label>
+          <span>Комментарий</span>
+
+          <textarea
+            value={offer.comment || ""}
+            placeholder="Что сделать дальше"
+            rows={2}
+            onChange={(event) =>
+              patchOffer(offer.id, {
+                comment: event.target.value
+              })
+            }
+          />
+        </label>
+
+        <div className="commercial-mobile-footer">
+          <label>
+            <span>Статус</span>
+
+            <select
+              className={statusClass(
+                offer.status
+              )}
+              value={offer.status || "Новый"}
+              onChange={(event) =>
+                patchOffer(offer.id, {
+                  status: event.target.value
+                })
+              }
+            >
+              <option>Новый</option>
+              <option>Интересуется</option>
+              <option>Перезвонить</option>
+              <option>Договорён</option>
+              <option>Не интересно</option>
+              <option>Недоступен</option>
+              <option>Закрыт</option>
+            </select>
+          </label>
+
+          <button
+            className="commercial-delete"
+            type="button"
+            title="Удалить запись"
+            aria-label="Удалить запись"
+            onClick={() =>
+              deleteOffer(offer.id)
+            }
+          >
+            ×
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <section className="commercial-panel">
       <header className="commercial-header">
@@ -821,7 +1157,7 @@ function deleteOffer(offerId) {
             onClick={downloadOffers}
             disabled={!offers.length}
           >
-            Скачать Excel
+            Excel
           </button>
 
           <button
@@ -829,7 +1165,7 @@ function deleteOffer(offerId) {
             type="button"
             onClick={createOffer}
           >
-            + Добавить звонок
+            + Новый звонок
           </button>
         </div>
       </header>
@@ -839,192 +1175,230 @@ function deleteOffer(offerId) {
           <strong>Записей пока нет</strong>
 
           <span>
-            Нажмите «Добавить звонок», чтобы внести
+            Нажмите «Новый звонок», чтобы добавить
             первую компанию.
           </span>
         </div>
       ) : (
-        <div className="commercial-table-scroll">
-          <table className="commercial-table">
-            <thead>
-              <tr>
-                <th>Дата</th>
-                <th>Время</th>
-                <th>Диспетчер</th>
-                <th>Компания</th>
-                <th>Телефон</th>
-                <th>Результат</th>
-                <th>Комментарий</th>
-                <th>Статус</th>
-                <th />
-              </tr>
-            </thead>
+        <>
+          {/* Таблица для компьютеров */}
+          <div className="commercial-desktop-view">
+            <div className="commercial-table-scroll">
+              <table className="commercial-table">
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th>Время</th>
+                    <th>Диспетчер</th>
+                    <th>Компания</th>
+                    <th>Телефон</th>
+                    <th>Результат</th>
+                    <th>Комментарий</th>
+                    <th>Статус</th>
+                    <th />
+                  </tr>
+                </thead>
 
-            <tbody>
-              {offers.map((offer) => (
-                <tr key={offer.id}>
-                  <td>
-                    <input
-                      type="date"
-                      value={offer.date || ""}
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            date:
-                              event.target.value
+                <tbody>
+                  {offers.map((offer) => (
+                    <tr key={offer.id}>
+                      <td>
+                        <input
+                          type="date"
+                          value={offer.date || ""}
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              date: event.target.value
+                            })
                           }
-                        )
-                      }
-                    />
-                  </td>
+                        />
+                      </td>
 
-                  <td>
-                    <input
-                      type="time"
-                      value={offer.time || ""}
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            time:
-                              event.target.value
+                      <td>
+                        <input
+                          type="time"
+                          value={offer.time || ""}
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              time: event.target.value
+                            })
                           }
-                        )
-                      }
-                    />
-                  </td>
+                        />
+                      </td>
 
-                  <td>
-                    <input
-                      value={
-                        offer.dispatcher || ""
-                      }
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            dispatcher:
-                              event.target.value
-                          }
-                        )
-                      }
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      value={offer.company || ""}
-                      placeholder="Название компании"
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            company:
-                              event.target.value
-                          }
-                        )
-                      }
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="tel"
-                      value={offer.phone || "+7"}
-                      placeholder="+7 (900) 000-00-00"
-                      maxLength={18}
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            phone:
-                              formatRussianPhone(
+                      <td>
+                        <input
+                          value={offer.dispatcher || ""}
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              dispatcher:
                                 event.target.value
-                              )
+                            })
                           }
-                        )
-                      }
-                    />
-                  </td>
+                        />
+                      </td>
 
-                  <td>
-                    <textarea
-                      value={offer.result || ""}
-                      placeholder="Что ответили"
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            result:
-                              event.target.value
+                      <td>
+                        <input
+                          value={offer.company || ""}
+                          placeholder="Название компании"
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              company:
+                                event.target.value
+                            })
                           }
-                        )
-                      }
-                    />
-                  </td>
+                        />
+                      </td>
 
-                  <td>
-                    <textarea
-                      value={offer.comment || ""}
-                      placeholder="Что сделать дальше"
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            comment:
-                              event.target.value
+                      <td>
+                        <input
+                          type="tel"
+                          value={offer.phone || "+7"}
+                          placeholder="+7 (900) 000-00-00"
+                          maxLength={18}
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              phone:
+                                formatRussianPhone(
+                                  event.target.value
+                                )
+                            })
                           }
-                        )
-                      }
-                    />
-                  </td>
+                        />
+                      </td>
 
-                  <td>
-                    <select
-                      className={statusClass(
-                        offer.status
+                      <td>
+                        <textarea
+                          value={offer.result || ""}
+                          placeholder="Что ответили"
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              result:
+                                event.target.value
+                            })
+                          }
+                        />
+                      </td>
+
+                      <td>
+                        <textarea
+                          value={offer.comment || ""}
+                          placeholder="Что сделать дальше"
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              comment:
+                                event.target.value
+                            })
+                          }
+                        />
+                      </td>
+
+                      <td>
+                        <select
+                          className={statusClass(
+                            offer.status
+                          )}
+                          value={
+                            offer.status || "Новый"
+                          }
+                          onChange={(event) =>
+                            patchOffer(offer.id, {
+                              status:
+                                event.target.value
+                            })
+                          }
+                        >
+                          <option>Новый</option>
+                          <option>Интересуется</option>
+                          <option>Перезвонить</option>
+                          <option>Договорён</option>
+                          <option>Не интересно</option>
+                          <option>Недоступен</option>
+                          <option>Закрыт</option>
+                        </select>
+                      </td>
+
+                      <td>
+                        <button
+                          className="commercial-delete"
+                          type="button"
+                          title="Удалить запись"
+                          onClick={() =>
+                            deleteOffer(offer.id)
+                          }
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Компактные карточки для телефона */}
+          <div className="commercial-mobile-view">
+            {mobileGroups.map((group) => {
+              const isExpanded =
+                group.alwaysOpen ||
+                expandedPeriods[group.id] === true;
+
+              return (
+                <section
+                  className="commercial-period"
+                  key={group.id}
+                >
+                  <button
+                    className="commercial-period__header"
+                    type="button"
+                    onClick={() => {
+                      if (!group.alwaysOpen) {
+                        togglePeriod(group.id);
+                      }
+                    }}
+                  >
+                    <span>
+                      <strong>{group.title}</strong>
+                      <small>{group.subtitle}</small>
+                    </span>
+
+                    <span className="commercial-period__meta">
+                      <b>{group.items.length}</b>
+
+                      {!group.alwaysOpen && (
+                        <i>
+                          {isExpanded ? "−" : "+"}
+                        </i>
                       )}
-                      value={
-                        offer.status || "Новый"
-                      }
-                      onChange={(event) =>
-                        patchOffer(
-                          offer.id,
-                          {
-                            status:
-                              event.target.value
-                          }
-                        )
-                      }
-                    >
-                      <option>Новый</option>
-                      <option>Интересуется</option>
-                      <option>Перезвонить</option>
-                      <option>Договорён</option>
-                      <option>Не интересно</option>
-                      <option>Недоступен</option>
-                      <option>Закрыт</option>
-                    </select>
-                  </td>
+                    </span>
+                  </button>
 
-                  <td>
-                    <button
-                      className="commercial-delete"
-                      type="button"
-                      title="Удалить запись"
-                      onClick={() =>
-                        deleteOffer(offer.id)
-                      }
-                    >
-                      ×
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  {isExpanded && (
+                    <div className="commercial-period__items">
+                      {group.items.map(
+                        (offer, index) => (
+                          <article
+                            className="commercial-mobile-card"
+                            key={offer.id}
+                          >
+                            <div className="commercial-mobile-card__number">
+                              Звонок №
+                              {group.items.length - index}
+                            </div>
+
+                            {renderOfferFields(offer)}
+                          </article>
+                        )
+                      )}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        </>
       )}
     </section>
   );

@@ -3153,3 +3153,330 @@ body,
     font-size: 11px;
   }
 }
+
+/* =====================================================
+   КОМПАКТНЫЙ ЖУРНАЛ КП НА ТЕЛЕФОНЕ
+===================================================== */
+
+.commercial-mobile-view {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .commercial-panel {
+    padding: 16px 12px;
+  }
+
+  .commercial-header {
+    gap: 14px;
+  }
+
+  .commercial-header h2 {
+    margin: 5px 0 7px;
+    font-size: 23px;
+    line-height: 1.12;
+  }
+
+  .commercial-header p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /*
+   * Две компактные кнопки:
+   * Excel и Новый звонок.
+   */
+  .commercial-header__actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns:
+      minmax(0, 0.8fr)
+      minmax(0, 1.2fr);
+    gap: 8px;
+  }
+
+  .commercial-header__actions button {
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 8px 10px;
+
+    border-radius: 13px;
+
+    font-size: 13px;
+    line-height: 1.15;
+  }
+
+  .commercial-header__actions .primary {
+    box-shadow:
+      0 8px 18px rgba(79, 70, 229, 0.18);
+  }
+
+  /*
+   * На телефоне прячем широкую таблицу
+   * и включаем карточки.
+   */
+  .commercial-desktop-view {
+    display: none;
+  }
+
+  .commercial-mobile-view {
+    margin-top: 14px;
+    display: grid;
+    gap: 10px;
+  }
+
+  /*
+   * Группа: последние 24 часа
+   * или архив за определённую дату.
+   */
+  .commercial-period {
+    overflow: hidden;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+
+    background: #ffffff;
+  }
+
+  .commercial-period__header {
+    width: 100%;
+    min-height: 58px;
+    padding: 10px 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    border: 0;
+    background: #f8fafc;
+
+    color: #172033;
+    text-align: left;
+  }
+
+  .commercial-period__header > span:first-child {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .commercial-period__header strong {
+    overflow: hidden;
+
+    font-size: 14px;
+    line-height: 1.2;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .commercial-period__header small {
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .commercial-period__meta {
+    flex: 0 0 auto;
+
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .commercial-period__meta b {
+    min-width: 26px;
+    height: 26px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 999px;
+
+    color: #5b21b6;
+    background: #ede9fe;
+
+    font-size: 11px;
+  }
+
+  .commercial-period__meta i {
+    width: 26px;
+    height: 26px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 8px;
+
+    color: #ffffff;
+    background: #5b21b6;
+
+    font-style: normal;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .commercial-period__items {
+    padding: 8px;
+    display: grid;
+    gap: 8px;
+  }
+
+  /*
+   * Одна запись звонка.
+   */
+  .commercial-mobile-card {
+    padding: 10px;
+
+    display: grid;
+    gap: 8px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+
+    background: #ffffff;
+  }
+
+  .commercial-mobile-card__number {
+    padding-bottom: 7px;
+
+    border-bottom: 1px solid #eef2f7;
+
+    color: #6d28d9;
+
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .commercial-mobile-card label {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .commercial-mobile-card label > span {
+    color: #64748b;
+
+    font-size: 9px;
+    font-weight: 850;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /*
+   * Два поля рядом:
+   * дата + время,
+   * компания + телефон.
+   */
+  .commercial-mobile-row {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .commercial-mobile-card input,
+  .commercial-mobile-card textarea,
+  .commercial-mobile-card select {
+    width: 100%;
+    min-width: 0;
+
+    min-height: 38px;
+    padding: 7px 9px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #d8dce6;
+    border-radius: 10px;
+
+    color: #172033;
+    background: #ffffff;
+
+    font: inherit;
+    font-size: 13px;
+  }
+
+  .commercial-mobile-card textarea {
+    min-height: 52px;
+    max-height: 110px;
+
+    resize: vertical;
+    line-height: 1.35;
+  }
+
+  .commercial-mobile-card input:focus,
+  .commercial-mobile-card textarea:focus,
+  .commercial-mobile-card select:focus {
+    outline:
+      2px solid rgba(109, 40, 217, 0.12);
+
+    border-color: #8b5cf6;
+  }
+
+  /*
+   * Статус и удаление в одной строке.
+   */
+  .commercial-mobile-footer {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      38px;
+    align-items: end;
+    gap: 8px;
+  }
+
+  .commercial-mobile-footer
+  .commercial-delete {
+    width: 38px;
+    height: 38px;
+    margin: 0;
+
+    border-radius: 10px;
+
+    font-size: 19px;
+  }
+}
+
+
+/* =====================================================
+   КП НА ОЧЕНЬ УЗКИХ ТЕЛЕФОНАХ
+===================================================== */
+
+@media (max-width: 380px) {
+  .commercial-panel {
+    padding: 14px 9px;
+  }
+
+  .commercial-header h2 {
+    font-size: 21px;
+  }
+
+  .commercial-header__actions {
+    gap: 6px;
+  }
+
+  .commercial-header__actions button {
+    min-height: 42px;
+    padding: 7px 5px;
+    font-size: 12px;
+  }
+
+  .commercial-mobile-row {
+    gap: 5px;
+  }
+
+  .commercial-mobile-card {
+    padding: 8px;
+  }
+
+  .commercial-mobile-card input,
+  .commercial-mobile-card textarea,
+  .commercial-mobile-card select {
+    padding: 6px 7px;
+    font-size: 12px;
+  }
+}
