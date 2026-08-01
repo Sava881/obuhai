@@ -55,23 +55,33 @@ service cloud.firestore {
     }
 
     match /workspaces/{userId} {
-      // Администратор видит только своё пространство.
-      // Техподдержка видит все пространства.
       allow read: if isActive()
         && (
           request.auth.uid == userId
           || isSupport()
         );
 
-      // Техподдержка создаёт пустое пространство
-      // во время выдачи доступа.
       allow create: if isSupport()
         && request.resource.data.ownerId == userId;
 
-      // Администратор сохраняет только свои данные.
       allow create, update: if isAdministrator()
         && request.auth.uid == userId
         && request.resource.data.ownerId == userId;
+
+      allow delete: if false;
+    }
+
+    match /commercialOffers/{userId} {
+      allow read: if isActive()
+        && (
+          request.auth.uid == userId
+          || isSupport()
+        );
+
+      allow create, update: if isAdministrator()
+        && request.auth.uid == userId
+        && request.resource.data.ownerId == userId
+        && request.resource.data.items is list;
 
       allow delete: if false;
     }

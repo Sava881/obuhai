@@ -475,6 +475,177 @@
 }
 
 /* =====================================================
+   ПЕРЕКЛЮЧАТЕЛЬ ТАБЕЛИ / КП
+===================================================== */
+
+.support-workspace-tabs {
+  margin-top: 16px;
+  padding: 5px;
+
+  display: inline-flex;
+  gap: 5px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.support-workspace-tabs button {
+  padding: 10px 16px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  border: 0;
+  border-radius: 10px;
+
+  color: #64748b;
+  background: transparent;
+
+  font-weight: 850;
+}
+
+.support-workspace-tabs button.active {
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    #6d28d9,
+    #2563eb
+  );
+}
+
+.support-workspace-tabs button span {
+  min-width: 21px;
+  padding: 3px 6px;
+
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+
+  font-size: 11px;
+  text-align: center;
+}
+
+
+/* =====================================================
+   КП В ТЕХПОДДЕРЖКЕ
+===================================================== */
+
+.support-commercial-card {
+  margin-top: 16px;
+
+  overflow: hidden;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 21px;
+
+  background: #ffffff;
+  box-shadow: 0 14px 42px rgba(30, 41, 59, 0.05);
+}
+
+.support-commercial-card > header {
+  padding: 22px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.support-commercial-card header span {
+  color: #6d28d9;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.support-commercial-card h3 {
+  margin: 6px 0;
+}
+
+.support-commercial-card p {
+  margin: 0;
+  color: #64748b;
+}
+
+.support-commercial-empty {
+  padding: 34px;
+  color: #64748b;
+  text-align: center;
+}
+
+.support-commercial-scroll {
+  overflow-x: auto;
+}
+
+.support-commercial-scroll table {
+  width: 100%;
+  min-width: 1350px;
+  border-collapse: collapse;
+}
+
+.support-commercial-scroll th,
+.support-commercial-scroll td {
+  padding: 13px;
+
+  border-right: 1px solid #eef2f7;
+  border-bottom: 1px solid #e5e7eb;
+
+  text-align: left;
+  vertical-align: top;
+}
+
+.support-commercial-scroll th {
+  color: #475569;
+  background: #f8fafc;
+
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.support-commercial-scroll td {
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.support-commercial-status {
+  display: inline-flex;
+  padding: 6px 9px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+
+  color: #475569;
+  background: #f8fafc;
+
+  font-size: 11px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.support-commercial-status.interested {
+  border-color: #86efac;
+  color: #047857;
+  background: #dcfce7;
+}
+
+.support-commercial-status.rejected {
+  border-color: #fca5a5;
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.support-commercial-status.unavailable {
+  border-color: #cbd5e1;
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.support-commercial-status.completed {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+/* =====================================================
    ПЛАНШЕТЫ И МОБИЛЬНЫЕ УСТРОЙСТВА
 ===================================================== */
 
@@ -680,6 +851,20 @@
   .support-main {
     padding-left: 12px;
     padding-right: 12px;
+  }
+
+  .support-workspace-tabs {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .support-workspace-tabs button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .support-commercial-card > header {
+    padding: 16px;
   }
 
   .support-header {

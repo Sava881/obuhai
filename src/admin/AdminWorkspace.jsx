@@ -3,13 +3,15 @@ import * as XLSX from "xlsx";
 import { trainingModules } from "../data/training";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../hooks/useWorkspace";
+import { useCommercialOffers } from "../hooks/useCommercialOffers";
 
 const menu = [
   { id: "dashboard", label: "Главная", icon: "home" },
   { id: "training", label: "Шпаргалка", icon: "book" },
   { id: "request", label: "Заявка", icon: "plus" },
   { id: "calculator", label: "Расчёт", icon: "calculator" },
-  { id: "clients", label: "Клиенты", icon: "users" }
+  { id: "clients", label: "Клиенты", icon: "users" },
+  { id: "commercial", label: "КП", icon: "briefcase" }
 ];
 
 const emptyRequest = {
@@ -59,6 +61,22 @@ function Icon({ name }) {
         <circle cx="9" cy="7" r="4" />
         <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </>
+    ),
+
+    briefcase: (
+      <>
+        <rect
+          x="3"
+          y="7"
+          width="18"
+          height="13"
+          rx="2"
+        />
+
+        <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <path d="M3 12h18" />
+        <path d="M10 12v2h4v-2" />
       </>
     )
   };
@@ -158,6 +176,13 @@ function AdminWorkspace() {
     syncError
   } = useWorkspace(user.uid);
 
+  const {
+    offers,
+    setOffers,
+    loading: offersLoading,
+    syncError: offersSyncError
+  } = useCommercialOffers(user.uid);
+
   const [request, setRequest] = useState(emptyRequest);
   const [notice, setNotice] = useState("");
 
@@ -166,7 +191,10 @@ function AdminWorkspace() {
     window.setTimeout(() => setNotice(""), 2600);
   }
 
-  if (workspaceLoading) {
+  if (
+    workspaceLoading ||
+    offersLoading
+  ) {
     return (
       <div className="workspace-loading">
         <div className="workspace-loading__logo">РО</div>
@@ -236,7 +264,7 @@ function AdminWorkspace() {
         </header>
 
         {notice && <div className="toast">{notice}</div>}
-        {syncError && (
+        {(syncError || offersSyncError) && (
           <div className="firebase-warning">
             Не удалось синхронизировать данные с Firebase. Проверьте интернет.
           </div>
@@ -259,6 +287,19 @@ function AdminWorkspace() {
         {page === "clients" && (
           <Clients clients={clients} setClients={setClients} flash={flash} />
         )}
+
+        {page === "commercial" && (
+          <CommercialOffers
+            offers={offers}
+            setOffers={setOffers}
+            dispatcherName={
+              profile?.name ||
+              "Администратор"
+            }
+            flash={flash}
+          />
+        )}
+
       </main>
     </div>
   );
@@ -625,6 +666,374 @@ function Calculator() {
         <div><small>Работы</small><strong>{money(workTotal)}</strong></div>
         <div className="total"><small>Итого</small><strong>{money(total)}</strong></div>
       </div>
+    </section>
+  );
+}
+
+function CommercialOffers({
+  offers,
+  setOffers,
+  dispatcherName,
+  flash
+}) {
+  function createOffer() {
+    const now = new Date();
+
+    const newOffer = {
+      id: crypto.randomUUID(),
+
+      date: now
+        .toISOString()
+        .slice(0, 10),
+
+      time: now
+        .toTimeString()
+        .slice(0, 5),
+
+      dispatcher: dispatcherName,
+      company: "",
+      phone: "+7",
+      result: "",
+      comment: "",
+      status: "Новый"
+    };
+
+    setOffers((currentOffers) => [
+      newOffer,
+      ...currentOffers
+    ]);
+
+    flash("Добавлена новая строка КП");
+  }
+
+  function patchOffer(offerId, patch) {
+    setOffers((currentOffers) =>
+      currentOffers.map((offer) =>
+        offer.id === offerId
+          ? {
+              ...offer,
+              ...patch
+            }
+          : offer
+      )
+    );
+  }
+
+  function deleteOffer(offerId) {
+    const confirmed = window.confirm(
+      "Удалить эту запись коммерческого предложения?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setOffers((currentOffers) =>
+      currentOffers.filter(
+        (offer) => offer.id !== offerId
+      )
+    );
+
+    flash("Запись удалена");
+  }
+
+  function statusClass(status) {
+    if (status === "Интересуется") {
+      return "commercial-status interested";
+    }
+
+    if (status === "Не интересно") {
+      return "commercial-status rejected";
+    }
+
+    if (status === "Недоступен") {
+      return "commercial-status unavailable";
+    }
+
+    if (
+      status === "Договорён" ||
+      status === "Закрыт"
+    ) {
+      return "commercial-status completed";
+    }
+
+    return "commercial-status";
+  }
+
+  function downloadOffers() {
+    if (!offers.length) {
+      flash("Нет записей для скачивания");
+      return;
+    }
+
+    const rows = offers.map((offer) => ({
+      Дата: offer.date || "",
+      Время: offer.time || "",
+      Диспетчер: offer.dispatcher || "",
+      Компания: offer.company || "",
+      Телефон: offer.phone || "",
+      Результат: offer.result || "",
+      Комментарий: offer.comment || "",
+      Статус: offer.status || ""
+    }));
+
+    const sheet =
+      XLSX.utils.json_to_sheet(rows);
+
+    sheet["!cols"] = [
+      { wch: 13 },
+      { wch: 10 },
+      { wch: 22 },
+      { wch: 28 },
+      { wch: 20 },
+      { wch: 35 },
+      { wch: 45 },
+      { wch: 18 }
+    ];
+
+    const book =
+      XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      book,
+      sheet,
+      "Коммерческие предложения"
+    );
+
+    XLSX.writeFile(
+      book,
+      "Коммерческие предложения.xlsx"
+    );
+  }
+
+  return (
+    <section className="commercial-panel">
+      <header className="commercial-header">
+        <div>
+          <span className="eyebrow">
+            КОММЕРЧЕСКИЕ ПРЕДЛОЖЕНИЯ
+          </span>
+
+          <h2>Журнал звонков компаниям</h2>
+
+          <p>
+            Вносите каждый звонок, результат разговора,
+            комментарий и текущий статус.
+          </p>
+        </div>
+
+        <div className="commercial-header__actions">
+          <button
+            className="secondary"
+            type="button"
+            onClick={downloadOffers}
+            disabled={!offers.length}
+          >
+            Скачать Excel
+          </button>
+
+          <button
+            className="primary"
+            type="button"
+            onClick={createOffer}
+          >
+            + Добавить звонок
+          </button>
+        </div>
+      </header>
+
+      {!offers.length ? (
+        <div className="commercial-empty">
+          <strong>Записей пока нет</strong>
+
+          <span>
+            Нажмите «Добавить звонок», чтобы внести
+            первую компанию.
+          </span>
+        </div>
+      ) : (
+        <div className="commercial-table-scroll">
+          <table className="commercial-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Время</th>
+                <th>Диспетчер</th>
+                <th>Компания</th>
+                <th>Телефон</th>
+                <th>Результат</th>
+                <th>Комментарий</th>
+                <th>Статус</th>
+                <th />
+              </tr>
+            </thead>
+
+            <tbody>
+              {offers.map((offer) => (
+                <tr key={offer.id}>
+                  <td>
+                    <input
+                      type="date"
+                      value={offer.date || ""}
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            date:
+                              event.target.value
+                          }
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="time"
+                      value={offer.time || ""}
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            time:
+                              event.target.value
+                          }
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      value={
+                        offer.dispatcher || ""
+                      }
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            dispatcher:
+                              event.target.value
+                          }
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      value={offer.company || ""}
+                      placeholder="Название компании"
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            company:
+                              event.target.value
+                          }
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      type="tel"
+                      value={offer.phone || "+7"}
+                      placeholder="+7 (900) 000-00-00"
+                      maxLength={18}
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            phone:
+                              formatRussianPhone(
+                                event.target.value
+                              )
+                          }
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <textarea
+                      value={offer.result || ""}
+                      placeholder="Что ответили"
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            result:
+                              event.target.value
+                          }
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <textarea
+                      value={offer.comment || ""}
+                      placeholder="Что сделать дальше"
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            comment:
+                              event.target.value
+                          }
+                        )
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <select
+                      className={statusClass(
+                        offer.status
+                      )}
+                      value={
+                        offer.status || "Новый"
+                      }
+                      onChange={(event) =>
+                        patchOffer(
+                          offer.id,
+                          {
+                            status:
+                              event.target.value
+                          }
+                        )
+                      }
+                    >
+                      <option>Новый</option>
+                      <option>Интересуется</option>
+                      <option>Перезвонить</option>
+                      <option>Договорён</option>
+                      <option>Не интересно</option>
+                      <option>Недоступен</option>
+                      <option>Закрыт</option>
+                    </select>
+                  </td>
+
+                  <td>
+                    <button
+                      className="commercial-delete"
+                      type="button"
+                      title="Удалить запись"
+                      onClick={() =>
+                        deleteOffer(offer.id)
+                      }
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

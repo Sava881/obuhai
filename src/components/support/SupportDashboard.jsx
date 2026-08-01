@@ -91,6 +91,13 @@ export default function SupportDashboard() {
   const [administrators, setAdministrators] = useState([]);
   const [selectedAdminId, setSelectedAdminId] = useState("");
   const [workspace, setWorkspace] = useState({ clients: [] });
+
+  const [commercialOffers, setCommercialOffers] =
+    useState([]);
+
+  const [workspaceSection, setWorkspaceSection] =
+    useState("tables");
+
 const [form, setForm] = useState({
   name: "",
   phone: "+7",
@@ -126,6 +133,33 @@ const [form, setForm] = useState({
     });
   }, [selectedAdminId]);
 
+  useEffect(() => {
+    if (!selectedAdminId) {
+      setCommercialOffers([]);
+      return undefined;
+    }
+
+    return onSnapshot(
+      doc(
+        db,
+        "commercialOffers",
+        selectedAdminId
+      ),
+
+      (snapshot) => {
+        setCommercialOffers(
+          snapshot.exists()
+            ? snapshot.data().items || []
+            : []
+        );
+      }
+    );
+  }, [selectedAdminId]);
+
+useEffect(() => {
+  setWorkspaceSection("tables");
+}, [selectedAdminId]);
+
 const selectedAdministrator = administrators.find(
   (item) => item.id === selectedAdminId
 );
@@ -149,6 +183,26 @@ const clients = workspace.clients || [];
 
     return { clients: clients.length, rows, spent };
   }, [clients]);
+
+  const commercialTotals = useMemo(() => {
+    const interested =
+      commercialOffers.filter(
+        (offer) =>
+          offer.status === "Интересуется"
+      ).length;
+
+    const callbacks =
+      commercialOffers.filter(
+        (offer) =>
+          offer.status === "Перезвонить"
+      ).length;
+
+    return {
+      total: commercialOffers.length,
+      interested,
+      callbacks
+    };
+  }, [commercialOffers]);
 
   async function handleCreate(event) {
     event.preventDefault();
@@ -260,6 +314,52 @@ rows.push({
     const book = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(book, sheet, "Табели");
     XLSX.writeFile(book, `Табели_${selectedAdministrator?.name || "администратор"}.xlsx`);
+  }
+
+  function downloadCommercialOffers() {
+    const rows = commercialOffers.map(
+      (offer) => ({
+        Дата: offer.date || "",
+        Время: offer.time || "",
+        Диспетчер: offer.dispatcher || "",
+        Компания: offer.company || "",
+        Телефон: offer.phone || "",
+        Результат: offer.result || "",
+        Комментарий: offer.comment || "",
+        Статус: offer.status || ""
+      })
+    );
+
+    const sheet =
+      XLSX.utils.json_to_sheet(rows);
+
+    sheet["!cols"] = [
+      { wch: 13 },
+      { wch: 10 },
+      { wch: 22 },
+      { wch: 28 },
+      { wch: 20 },
+      { wch: 35 },
+      { wch: 45 },
+      { wch: 18 }
+    ];
+
+    const book =
+      XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      book,
+      sheet,
+      "КП"
+    );
+
+    XLSX.writeFile(
+      book,
+      `КП_${
+        selectedAdministrator?.name ||
+        "администратор"
+      }.xlsx`
+    );
   }
 
   return (
@@ -425,14 +525,109 @@ rows.push({
               </button>
             </header>
 
-            <div className="workspace-summary">
-              <div><span>Заказчиков</span><strong>{totals.clients}</strong></div>
-              <div><span>Строк в табелях</span><strong>{totals.rows}</strong></div>
-              <div><span>Сумма работ</span><strong>{money(totals.spent)}</strong></div>
-              <button type="button" onClick={downloadAll} disabled={!clients.length}>Скачать все табели</button>
+            <div className="support-workspace-tabs">
+              <button
+                type="button"
+                className={
+                  workspaceSection === "tables"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setWorkspaceSection("tables")
+                }
+              >
+                Табели
+              </button>
+
+              <button
+                type="button"
+                className={
+                  workspaceSection === "commercial"
+                    ? "active"
+                    : ""
+                }
+                onClick={() =>
+                  setWorkspaceSection("commercial")
+                }
+              >
+                КП
+                <span>
+                  {commercialOffers.length}
+                </span>
+              </button>
             </div>
 
-            <div className="support-clients">
+            {workspaceSection === "tables" ? (
+              <div className="workspace-summary">
+                <div>
+                  <span>Заказчиков</span>
+                  <strong>
+                    {totals.clients}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Строк в табелях</span>
+                  <strong>
+                    {totals.rows}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Сумма работ</span>
+                  <strong>
+                    {money(totals.spent)}
+                  </strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={downloadAll}
+                  disabled={!clients.length}
+                >
+                  Скачать все табели
+                </button>
+              </div>
+            ) : (
+              <div className="workspace-summary">
+                <div>
+                  <span>Всего звонков</span>
+                  <strong>
+                    {commercialTotals.total}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Интересуются</span>
+                  <strong>
+                    {commercialTotals.interested}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Перезвонить</span>
+                  <strong>
+                    {commercialTotals.callbacks}
+                  </strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={
+                    downloadCommercialOffers
+                  }
+                  disabled={
+                    !commercialOffers.length
+                  }
+                >
+                  Скачать КП
+                </button>
+              </div>
+            )}
+
+{workspaceSection === "tables" && (
+  <div className="support-clients">
               {clients.map((client) => (
                 <article className="support-client-card" key={client.id}>
                   <header>
@@ -506,8 +701,121 @@ rows.push({
                     </table>
                   </div>
                 </article>
-              ))}
-            </div>
+      ))}
+    </div>
+)}
+
+            {workspaceSection === "commercial" && (
+              <section className="support-commercial-card">
+                <header>
+                  <div>
+                    <span>
+                      КОММЕРЧЕСКИЕ ПРЕДЛОЖЕНИЯ
+                    </span>
+
+                    <h3>
+                      Журнал звонков администратора
+                    </h3>
+
+                    <p>
+                      Данные обновляются автоматически
+                      в реальном времени.
+                    </p>
+                  </div>
+                </header>
+
+                {!commercialOffers.length ? (
+                  <div className="support-commercial-empty">
+                    Администратор ещё не добавил записи КП.
+                  </div>
+                ) : (
+                  <div className="support-commercial-scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Дата</th>
+                          <th>Время</th>
+                          <th>Диспетчер</th>
+                          <th>Компания</th>
+                          <th>Телефон</th>
+                          <th>Результат</th>
+                          <th>Комментарий</th>
+                          <th>Статус</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {commercialOffers.map(
+                          (offer) => (
+                            <tr key={offer.id}>
+                              <td>
+                                {formatShortDate(
+                                  offer.date
+                                )}
+                              </td>
+
+                              <td>
+                                {offer.time || "—"}
+                              </td>
+
+                              <td>
+                                {offer.dispatcher ||
+                                  "—"}
+                              </td>
+
+                              <td>
+                                <strong>
+                                  {offer.company ||
+                                    "Не указана"}
+                                </strong>
+                              </td>
+
+                              <td>
+                                {offer.phone || "—"}
+                              </td>
+
+                              <td>
+                                {offer.result || "—"}
+                              </td>
+
+                              <td>
+                                {offer.comment || "—"}
+                              </td>
+
+                              <td>
+                                <span
+                                  className={`support-commercial-status ${
+                                    offer.status ===
+                                    "Интересуется"
+                                      ? "interested"
+                                      : offer.status ===
+                                          "Не интересно"
+                                        ? "rejected"
+                                        : offer.status ===
+                                            "Недоступен"
+                                          ? "unavailable"
+                                          : offer.status ===
+                                                "Договорён" ||
+                                              offer.status ===
+                                                "Закрыт"
+                                            ? "completed"
+                                            : ""
+                                  }`}
+                                >
+                                  {offer.status ||
+                                    "Новый"}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            )}
+
           </section>
         )}
       </main>
