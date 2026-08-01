@@ -718,20 +718,36 @@ function addRow() {
   });
 }
 
-  function patchRow(id, patch) {
-    patchClient({
-      rows: getRows().map((row) =>
-        row.id === id
-          ? {
-              ...row,
-              ...patch
-            }
-          : row
-      )
-    });
+function patchRow(rowId, patch) {
+  setClients((currentClients) =>
+    currentClients.map((currentClient) => {
+      if (currentClient.id !== client.id) {
+        return currentClient;
+      }
 
-    setCalculatedTotal(null);
-  }
+      const currentRows = Array.isArray(
+        currentClient.rows
+      )
+        ? currentClient.rows
+        : [];
+
+      return {
+        ...currentClient,
+
+        rows: currentRows.map((row) =>
+          row.id === rowId
+            ? {
+                ...row,
+                ...patch
+              }
+            : row
+        )
+      };
+    })
+  );
+
+  setCalculatedTotal(null);
+}
 
   function deleteRow(id) {
     patchClient({

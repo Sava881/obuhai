@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 
@@ -6,9 +11,30 @@ export function useWorkspace(userId) {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState("");
+
   const loaded = useRef(false);
-  const lastRemote = useRef("");
-  const saveTimer = useRef(null);
+const lastRemote = useRef("");
+const saveTimer = useRef(null);
+
+/*
+ * Пока пользователь вводит данные,
+ * серверный снимок не должен заменять
+ * локальное незавершённое значение.
+ */
+const localChangesPending = useRef(false);
+
+const updateClients = useCallback(
+  (nextValue) => {
+    /*
+     * Ставим флаг до изменения состояния.
+     * Это важно при быстром вводе цифр.
+     */
+    localChangesPending.current = true;
+
+    setClients(nextValue);
+  },
+  []
+);
 
   useEffect(() => {
     if (!userId) return undefined;
@@ -19,11 +45,23 @@ export function useWorkspace(userId) {
       ref,
       async (snapshot) => {
         try {
-          if (snapshot.exists()) {
-            const nextClients = snapshot.data().clients || [];
-            lastRemote.current = JSON.stringify(nextClients);
-            setClients(nextClients);
-          } else {
+if (snapshot.exists()) {
+  const nextClients =
+    snapshot.data().clients || [];
+
+  const serializedRemote =
+    JSON.stringify(nextClients);
+
+  /*
+   * Если пользователь прямо сейчас меняет поля,
+   * не подменяем его ввод предыдущей серверной
+   * версией документа.
+   */
+  if (!localChangesPending.current) {
+    lastRemote.current = serializedRemote;
+    setClients(nextClients);
+  }
+} else {
             const local = JSON.parse(localStorage.getItem("legalClients") || "[]");
             const initial = Array.isArray(local) ? local : [];
             setClients(initial);
@@ -74,16 +112,29 @@ export function useWorkspace(userId) {
           { merge: true }
         );
 
-        lastRemote.current = serialized;
-        setSyncError("");
-      } catch (error) {
-        console.error(error);
-        setSyncError(error.message);
-      }
+lastRemote.current = serialized;
+localChangesPending.current = false;
+setSyncError("");
+} catch (error) {
+  console.error(error);
+
+  /*
+   * Не сбрасываем localChangesPending:
+   * пользовательские значения остаются
+   * на экране и не заменяются старой копией.
+   */
+  setSyncError(error.message);
+}
     }, 500);
 
     return () => clearTimeout(saveTimer.current);
   }, [clients, userId]);
 
-  return { clients, setClients, loading, syncError };
+return {
+  clients,
+  setClients: updateClients,
+  loading,
+  syncError
+};
+
 }
