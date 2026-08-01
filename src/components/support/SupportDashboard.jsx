@@ -223,14 +223,20 @@ setForm({
 
     clients.forEach((client) => {
       (client.rows || []).forEach((row) => {
-        rows.push({
-          Заказчик: client.company || "",
-          Телефон: client.phone || "",
-          Дата: row.date || "",
-          Рабочих: Number(row.workers || 0),
-          "Цена за одного": Number(row.price || 0),
-          Итого: rowTotal(row)
-        });
+rows.push({
+  Заказчик: client.company || "",
+  Телефон: client.phone || "",
+  Дата: row.date || "",
+  Рабочих: Number(row.workers || 0),
+  "Цена за одного": Number(row.price || 0),
+  Итого: rowTotal(row),
+  "Статус оплаты": row.paid
+    ? "Оплата получена"
+    : "Ожидается оплата",
+  "Дата оплаты": row.paidAt
+    ? new Date(row.paidAt).toLocaleString("ru-RU")
+    : ""
+});
       });
     });
 
@@ -423,24 +429,54 @@ setForm({
 
                   <div className="support-table-scroll">
                     <table>
-                      <thead>
-                        <tr>
-                          <th>Дата</th>
-                          <th>Рабочих</th>
-                          <th>Цена</th>
-                          <th>Итого</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(client.rows || []).map((row) => (
-                          <tr key={row.id}>
-                            <td>{row.date || "—"}</td>
-                            <td>{row.workers || 0}</td>
-                            <td>{money(row.price)}</td>
-                            <td><strong>{money(rowTotal(row))}</strong></td>
-                          </tr>
-                        ))}
-                      </tbody>
+<thead>
+  <tr>
+    <th>Дата</th>
+    <th>Рабочих</th>
+    <th>Цена</th>
+    <th>Итого</th>
+    <th>Статус</th>
+  </tr>
+</thead>
+
+<tbody>
+  {(client.rows || []).map((row) => (
+    <tr
+      key={row.id}
+      className={
+        row.paid
+          ? "support-payment-row paid"
+          : "support-payment-row"
+      }
+    >
+      <td>{row.date || "—"}</td>
+
+      <td>{row.workers || 0}</td>
+
+      <td>{money(row.price)}</td>
+
+      <td>
+        <strong>
+          {money(rowTotal(row))}
+        </strong>
+      </td>
+
+      <td>
+        <span
+          className={
+            row.paid
+              ? "support-payment-status paid"
+              : "support-payment-status"
+          }
+        >
+          {row.paid
+            ? "Оплата получена"
+            : "Ожидается оплата"}
+        </span>
+      </td>
+    </tr>
+  ))}
+</tbody>
                     </table>
                   </div>
                 </article>

@@ -373,7 +373,7 @@
 
 .support-client-card table {
   width: 100%;
-  min-width: 600px;
+  min-width: 760px;
   border-collapse: collapse;
 }
 
@@ -384,6 +384,62 @@
   text-align: left;
 }
 
+/* =====================================================
+   СТАТУС ОПЛАТЫ В КАБИНЕТЕ ТЕХПОДДЕРЖКИ
+===================================================== */
+
+.support-payment-row {
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.support-payment-row.paid {
+  background: #f0fdf4;
+}
+
+.support-payment-row.paid td {
+  border-bottom-color: #bbf7d0;
+}
+
+.support-payment-row.paid td:first-child {
+  box-shadow: inset 4px 0 0 #22c55e;
+}
+
+.support-payment-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 128px;
+  padding: 7px 11px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+
+  color: #6b7280;
+  background: #f8fafc;
+
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.support-payment-status.paid {
+  border-color: #86efac;
+  color: #047857;
+  background: #dcfce7;
+}
+
+.support-payment-status.paid::before {
+  content: "✓";
+  margin-right: 6px;
+
+  color: #16a34a;
+  font-size: 13px;
+  font-weight: 950;
+}
 
 /* =====================================================
    ПЛАНШЕТЫ И МОБИЛЬНЫЕ УСТРОЙСТВА
