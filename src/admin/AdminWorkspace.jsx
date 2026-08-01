@@ -719,23 +719,15 @@ function CommercialOffers({
     );
   }
 
-  function deleteOffer(offerId) {
-    const confirmed = window.confirm(
-      "Удалить эту запись коммерческого предложения?"
-    );
+function deleteOffer(offerId) {
+  setOffers((currentOffers) =>
+    currentOffers.filter(
+      (offer) => offer.id !== offerId
+    )
+  );
 
-    if (!confirmed) {
-      return;
-    }
-
-    setOffers((currentOffers) =>
-      currentOffers.filter(
-        (offer) => offer.id !== offerId
-      )
-    );
-
-    flash("Запись удалена");
-  }
+  flash("Запись КП удалена");
+}
 
   function statusClass(status) {
     if (status === "Интересуется") {
