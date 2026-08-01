@@ -3040,3 +3040,116 @@ body,
     font-size: 8px;
   }
 }
+
+/* =====================================================
+   КОМПАКТНАЯ ВЕРХНЯЯ ПАНЕЛЬ НА ТЕЛЕФОНЕ
+   Работает во всех разделах приложения
+===================================================== */
+
+@media (max-width: 760px) {
+  .topbar {
+    width: auto;
+
+    min-height: 58px;
+    height: 58px;
+
+    margin-right: -12px;
+    margin-bottom: 12px;
+    margin-left: -12px;
+
+    padding: 0 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    box-sizing: border-box;
+
+    border-bottom:
+      1px solid rgba(229, 231, 235, 0.85);
+
+    background:
+      rgba(244, 245, 251, 0.92);
+
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+
+    box-shadow:
+      0 6px 18px rgba(30, 41, 59, 0.05);
+  }
+
+  .topbar > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .topbar p {
+    display: none;
+  }
+
+  .topbar h1 {
+    margin: 0;
+
+    overflow: hidden;
+
+    color: #172033;
+
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.1;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-actions {
+    flex: 0 0 auto;
+
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .topbar-actions .primary {
+    display: none;
+  }
+
+  .logout-button {
+    min-width: auto;
+    min-height: 36px;
+
+    padding: 7px 11px;
+
+    border-radius: 11px;
+
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .topbar {
+    min-height: 54px;
+    height: 54px;
+
+    margin-right: -8px;
+    margin-left: -8px;
+
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .topbar h1 {
+    font-size: 17px;
+  }
+
+  .logout-button {
+    min-height: 34px;
+    padding: 6px 9px;
+    font-size: 11px;
+  }
+}
