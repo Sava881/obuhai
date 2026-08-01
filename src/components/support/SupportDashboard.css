@@ -367,21 +367,50 @@
 }
 
 .support-table-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  overflow: hidden;
 }
 
 .support-client-card table {
   width: 100%;
-  min-width: 760px;
+  min-width: 0;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
 .support-client-card th,
 .support-client-card td {
-  padding: 13px 20px;
+  padding: 13px 12px;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
+  vertical-align: middle;
+}
+
+/* Ширина пяти колонок */
+.support-client-card th:nth-child(1),
+.support-client-card td:nth-child(1) {
+  width: 18%;
+  white-space: nowrap;
+}
+
+.support-client-card th:nth-child(2),
+.support-client-card td:nth-child(2) {
+  width: 15%;
+}
+
+.support-client-card th:nth-child(3),
+.support-client-card td:nth-child(3) {
+  width: 17%;
+}
+
+.support-client-card th:nth-child(4),
+.support-client-card td:nth-child(4) {
+  width: 18%;
+}
+
+.support-client-card th:nth-child(5),
+.support-client-card td:nth-child(5) {
+  width: 32%;
 }
 
 /* =====================================================
@@ -411,8 +440,8 @@
   align-items: center;
   justify-content: center;
 
-  min-width: 128px;
-  padding: 7px 11px;
+  max-width: 100%;
+  padding: 7px 10px;
 
   border: 1px solid #e5e7eb;
   border-radius: 999px;
@@ -424,6 +453,10 @@
   font-weight: 850;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.support-status-mobile {
+  display: none;
 }
 
 .support-payment-status.paid {
@@ -582,15 +615,60 @@
     line-height: 1.45;
   }
 
-  .support-client-card table {
-    min-width: 470px;
-  }
+.support-client-card table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
 
-  .support-client-card th,
-  .support-client-card td {
-    padding: 12px 16px;
-    font-size: 13px;
-  }
+.support-client-card th,
+.support-client-card td {
+  padding: 10px 7px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.support-client-card th {
+  font-size: 11px;
+}
+
+.support-client-card th:nth-child(1),
+.support-client-card td:nth-child(1) {
+  width: 19%;
+}
+
+.support-client-card th:nth-child(2),
+.support-client-card td:nth-child(2) {
+  width: 14%;
+}
+
+.support-client-card th:nth-child(3),
+.support-client-card td:nth-child(3) {
+  width: 16%;
+}
+
+.support-client-card th:nth-child(4),
+.support-client-card td:nth-child(4) {
+  width: 18%;
+}
+
+.support-client-card th:nth-child(5),
+.support-client-card td:nth-child(5) {
+  width: 33%;
+}
+
+.support-payment-status {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.support-status-desktop {
+  display: none;
+}
+
+.support-status-mobile {
+  display: inline;
+}
 }
 
 
@@ -624,12 +702,111 @@
     padding: 16px;
   }
 
-  .support-client-card table {
-    min-width: 430px;
+.support-client-card table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.support-client-card th,
+.support-client-card td {
+  padding: 9px 4px;
+  font-size: 11px;
+}
+
+.support-client-card th {
+  font-size: 10px;
+}
+
+.support-client-card th:first-child,
+.support-client-card td:first-child {
+  padding-left: 8px;
+}
+
+.support-client-card th:last-child,
+.support-client-card td:last-child {
+  padding-right: 6px;
+}
+
+.support-client-card td:nth-child(1) {
+  white-space: nowrap;
+  font-size: 10.5px;
+}
+
+.support-client-card td:nth-child(4) strong {
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.support-payment-status {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 3px;
+  font-size: 10px;
+}
+
+.support-payment-status.paid::before {
+  margin-right: 3px;
+  font-size: 11px;
+}
+}
+
+/* =====================================================
+   ОЧЕНЬ УЗКИЕ ТЕЛЕФОНЫ
+===================================================== */
+
+@media (max-width: 380px) {
+  .support-main {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .support-client-card > header {
+    padding: 14px;
   }
 
   .support-client-card th,
   .support-client-card td {
-    padding: 11px 14px;
+    padding: 8px 3px;
+    font-size: 10px;
+  }
+
+  .support-client-card th {
+    font-size: 9px;
+  }
+
+  .support-client-card th:nth-child(1),
+  .support-client-card td:nth-child(1) {
+    width: 20%;
+  }
+
+  .support-client-card th:nth-child(2),
+  .support-client-card td:nth-child(2) {
+    width: 14%;
+  }
+
+  .support-client-card th:nth-child(3),
+  .support-client-card td:nth-child(3) {
+    width: 16%;
+  }
+
+  .support-client-card th:nth-child(4),
+  .support-client-card td:nth-child(4) {
+    width: 17%;
+  }
+
+  .support-client-card th:nth-child(5),
+  .support-client-card td:nth-child(5) {
+    width: 33%;
+  }
+
+  .support-payment-status {
+    font-size: 9px;
+    padding: 5px 2px;
+  }
+
+  .support-payment-status.paid::before {
+    margin-right: 2px;
+    font-size: 10px;
   }
 }

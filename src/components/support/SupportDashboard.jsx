@@ -15,6 +15,22 @@ function rowTotal(row) {
   return Number(row.workers || 0) * Number(row.price || 0);
 }
 
+function formatShortDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const parts = String(value).split("-");
+
+  if (parts.length !== 3) {
+    return value;
+  }
+
+  const [year, month, day] = parts;
+
+  return `${day}.${month}.${year.slice(-2)}`;
+}
+
 function getFullAge(birthDate) {
   if (!birthDate) return null;
 
@@ -449,7 +465,9 @@ rows.push({
           : "support-payment-row"
       }
     >
-      <td>{row.date || "—"}</td>
+<td title={row.date || ""}>
+  {formatShortDate(row.date)}
+</td>
 
       <td>{row.workers || 0}</td>
 
@@ -461,19 +479,27 @@ rows.push({
         </strong>
       </td>
 
-      <td>
-        <span
-          className={
-            row.paid
-              ? "support-payment-status paid"
-              : "support-payment-status"
-          }
-        >
-          {row.paid
-            ? "Оплата получена"
-            : "Ожидается оплата"}
-        </span>
-      </td>
+<td className="support-status-cell">
+  <span
+    className={
+      row.paid
+        ? "support-payment-status paid"
+        : "support-payment-status"
+    }
+  >
+    <span className="support-status-desktop">
+      {row.paid
+        ? "Оплата получена"
+        : "Ожидается оплата"}
+    </span>
+
+    <span className="support-status-mobile">
+      {row.paid
+        ? "Получена"
+        : "Ожидается"}
+    </span>
+  </span>
+</td>
     </tr>
   ))}
 </tbody>
