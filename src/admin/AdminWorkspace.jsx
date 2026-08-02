@@ -829,61 +829,79 @@ function CommercialOffers({
     return "commercial-status";
   }
 
-  function downloadOffers() {
-    if (!offers.length) {
-      flash("Нет записей для скачивания");
-      return;
-    }
-
-    const rows = offers.map((offer) => ({
-      Дата: offer.date || "",
-      Время: offer.time || "",
-      Диспетчер: offer.dispatcher || "",
-      Компания: offer.company || "",
-      Телефон: offer.phone || "",
-      Результат: offer.result || "",
-      Комментарий: offer.comment || "",
-      Статус: offer.status || ""
-    }));
-
-    const sheet =
-      XLSX.utils.json_to_sheet(rows);
-
-    sheet["!cols"] = [
-      { wch: 13 },
-      { wch: 10 },
-      { wch: 22 },
-      { wch: 28 },
-      { wch: 20 },
-      { wch: 35 },
-      { wch: 45 },
-      { wch: 18 }
-    ];
-
-    const book =
-      XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(
-      book,
-      sheet,
-      "Коммерческие предложения"
-    );
-
-    XLSX.writeFile(
-      book,
-      "Коммерческие предложения.xlsx"
-    );
+function downloadOfferItems(
+  items,
+  fileName,
+  sheetName = "Коммерческие предложения"
+) {
+  if (!items.length) {
+    flash("В выбранном периоде нет записей");
+    return;
   }
 
-/*
- * Все записи группируем по календарной дате.
- *
- * Группа за последние 24 часа раскрывается
- * автоматически. Более старые группы
- * остаются свёрнутыми.
- */
-const twentyFourHours =
-  24 * 60 * 60 * 1000;
+  const rows = items.map((offer) => ({
+    Дата: offer.date || "",
+    Время: offer.time || "",
+    Диспетчер: offer.dispatcher || "",
+    Компания: offer.company || "",
+    Телефон: offer.phone || "",
+    Результат: offer.result || "",
+    Комментарий: offer.comment || "",
+    Статус: offer.status || ""
+  }));
+
+  const sheet =
+    XLSX.utils.json_to_sheet(rows);
+
+  sheet["!cols"] = [
+    { wch: 13 },
+    { wch: 10 },
+    { wch: 22 },
+    { wch: 28 },
+    { wch: 20 },
+    { wch: 35 },
+    { wch: 45 },
+    { wch: 18 }
+  ];
+
+  const book =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    book,
+    sheet,
+    sheetName.slice(0, 31)
+  );
+
+  XLSX.writeFile(
+    book,
+    `${fileName}.xlsx`
+  );
+}
+
+function downloadOffers() {
+  downloadOfferItems(
+    offers,
+    "Коммерческие предложения"
+  );
+}
+
+function downloadPeriod(group) {
+  const safePeriodName =
+    group.id === "without-date"
+      ? "Без даты"
+      : group.id;
+
+  downloadOfferItems(
+    group.items,
+    `КП_${safePeriodName}`,
+    group.title
+  );
+
+  flash(
+    `Скачан период: ${group.title}`
+  );
+}
 
 function sortOffers(items) {
   return [...items].sort(
@@ -937,48 +955,48 @@ const offerGroups = Object.entries(
     const lastTime =
       times[times.length - 1] || "—";
 
-    const newestTimestamp = Math.max(
-      ...sortedItems.map(
-        (offer) =>
-          getOfferTimestamp(offer) || 0
-      )
-    );
+const todayDateKey =
+  localDateKey(new Date(currentTimestamp));
 
-    const isRecent =
-      newestTimestamp > 0 &&
-      currentTimestamp -
-        newestTimestamp <
-        twentyFourHours;
+const isToday =
+  date !== "without-date" &&
+  date === todayDateKey;
 
-    return {
-      id: date,
+return {
+  id: date,
 
-      title:
-        date === "without-date"
-          ? "Без даты"
-          : formatPeriodDate(date),
+  title:
+    date === "without-date"
+      ? "Без даты"
+      : formatPeriodDate(date),
 
-      subtitle:
-        firstTime === lastTime
-          ? `Время звонка: ${firstTime}`
-          : `Период звонков: ${firstTime}–${lastTime}`,
+  subtitle:
+    firstTime === lastTime
+      ? `Время звонка: ${firstTime}`
+      : `Период звонков: ${firstTime}–${lastTime}`,
 
-      items: sortedItems,
+  items: sortedItems,
 
-      /*
-       * Записи младше 24 часов открыты.
-       * Старые даты пользователь раскрывает сам.
-       */
-      alwaysOpen: isRecent
-    };
+  /*
+   * Открыта только сегодняшняя дата.
+   * Все предыдущие периоды по умолчанию свёрнуты.
+   */
+  alwaysOpen: isToday
+};
   });
 
-  function togglePeriod(periodId) {
-    setExpandedPeriods((current) => ({
+function togglePeriod(periodId, defaultExpanded = false) {
+  setExpandedPeriods((current) => {
+    const currentValue =
+      current[periodId] ??
+      defaultExpanded;
+
+    return {
       ...current,
-      [periodId]: !current[periodId]
-    }));
-  }
+      [periodId]: !currentValue
+    };
+  });
+}
 
   function renderOfferFields(offer) {
     return (
@@ -1183,45 +1201,56 @@ const offerGroups = Object.entries(
 <div className="commercial-desktop-view">
   <div className="commercial-desktop-groups">
     {offerGroups.map((group) => {
-      const isExpanded =
-        group.alwaysOpen ||
-        expandedPeriods[group.id] === true;
+const isExpanded =
+  expandedPeriods[group.id] ??
+  group.alwaysOpen;
 
       return (
         <section
           className="commercial-desktop-period"
           key={group.id}
         >
-          <button
-            className="commercial-desktop-period__header"
-            type="button"
-            onClick={() => {
-              if (!group.alwaysOpen) {
-                togglePeriod(group.id);
-              }
-            }}
-          >
-            <span>
-              <strong>{group.title}</strong>
-              <small>{group.subtitle}</small>
-            </span>
+<div className="commercial-desktop-period__header">
+  <button
+    className="commercial-period-toggle"
+    type="button"
+onClick={() =>
+  togglePeriod(
+    group.id,
+    group.alwaysOpen
+  )
+}
+  >
+    <span>
+      <strong>{group.title}</strong>
+      <small>{group.subtitle}</small>
+    </span>
 
-            <span className="commercial-desktop-period__meta">
-              <b>
-                {group.items.length}
-                {" "}
-                {group.items.length === 1
-                  ? "звонок"
-                  : "звонков"}
-              </b>
+    <span className="commercial-desktop-period__meta">
+      <b>
+        {group.items.length}
+        {" "}
+        {group.items.length === 1
+          ? "звонок"
+          : "звонков"}
+      </b>
 
-              {!group.alwaysOpen && (
-                <i>
-                  {isExpanded ? "−" : "+"}
-                </i>
-              )}
-            </span>
-          </button>
+<i>
+  {isExpanded ? "−" : "+"}
+</i>
+    </span>
+  </button>
+
+  <button
+    className="commercial-period-download"
+    type="button"
+    onClick={() =>
+      downloadPeriod(group)
+    }
+  >
+    Скачать период
+  </button>
+</div>
 
           {isExpanded && (
             <div className="commercial-table-scroll">
@@ -1422,39 +1451,50 @@ const offerGroups = Object.entries(
           {/* Компактные карточки для телефона */}
 <div className="commercial-mobile-view">
   {offerGroups.map((group) => {
-              const isExpanded =
-                group.alwaysOpen ||
-                expandedPeriods[group.id] === true;
+const isExpanded =
+  expandedPeriods[group.id] ??
+  group.alwaysOpen;
 
               return (
                 <section
                   className="commercial-period"
                   key={group.id}
                 >
-                  <button
-                    className="commercial-period__header"
-                    type="button"
-                    onClick={() => {
-                      if (!group.alwaysOpen) {
-                        togglePeriod(group.id);
-                      }
-                    }}
-                  >
-                    <span>
-                      <strong>{group.title}</strong>
-                      <small>{group.subtitle}</small>
-                    </span>
+<div className="commercial-period__header">
+  <button
+    className="commercial-period-toggle"
+    type="button"
+onClick={() =>
+  togglePeriod(
+    group.id,
+    group.alwaysOpen
+  )
+}
+  >
+    <span>
+      <strong>{group.title}</strong>
+      <small>{group.subtitle}</small>
+    </span>
 
-                    <span className="commercial-period__meta">
-                      <b>{group.items.length}</b>
+    <span className="commercial-period__meta">
+      <b>{group.items.length}</b>
 
-                      {!group.alwaysOpen && (
-                        <i>
-                          {isExpanded ? "−" : "+"}
-                        </i>
-                      )}
-                    </span>
-                  </button>
+<i>
+  {isExpanded ? "−" : "+"}
+</i>
+    </span>
+  </button>
+
+  <button
+    className="commercial-period-download"
+    type="button"
+    onClick={() =>
+      downloadPeriod(group)
+    }
+  >
+    Excel
+  </button>
+</div>
 
                   {isExpanded && (
                     <div className="commercial-period__items">
