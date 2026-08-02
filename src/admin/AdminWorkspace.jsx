@@ -875,106 +875,103 @@ function CommercialOffers({
     );
   }
 
-  /*
-   * Записи моложе 24 часов остаются
-   * в группе «Текущие звонки».
-   *
-   * Более старые записи группируются
-   * отдельно по календарным датам.
-   */
-  const twentyFourHours =
-    24 * 60 * 60 * 1000;
+/*
+ * Все записи группируем по календарной дате.
+ *
+ * Группа за последние 24 часа раскрывается
+ * автоматически. Более старые группы
+ * остаются свёрнутыми.
+ */
+const twentyFourHours =
+  24 * 60 * 60 * 1000;
 
-  const currentOffers = [];
-  const archivedMap = {};
+function sortOffers(items) {
+  return [...items].sort(
+    (first, second) =>
+      getOfferTimestamp(second) -
+      getOfferTimestamp(first)
+  );
+}
 
-  offers.forEach((offer) => {
-    const offerTimestamp =
-      getOfferTimestamp(offer);
+const groupedOffersMap = {};
 
-    const offerAge =
-      currentTimestamp - offerTimestamp;
+offers.forEach((offer) => {
+  const dateKey =
+    offer.date || "without-date";
 
-    if (
-      offerTimestamp > 0 &&
-      offerAge < twentyFourHours
-    ) {
-      currentOffers.push(offer);
-      return;
-    }
-
-    const dateKey =
-      offer.date || "without-date";
-
-    if (!archivedMap[dateKey]) {
-      archivedMap[dateKey] = [];
-    }
-
-    archivedMap[dateKey].push(offer);
-  });
-
-  function sortOffers(items) {
-    return [...items].sort(
-      (first, second) =>
-        getOfferTimestamp(second) -
-        getOfferTimestamp(first)
-    );
+  if (!groupedOffersMap[dateKey]) {
+    groupedOffersMap[dateKey] = [];
   }
 
-  const currentGroup = currentOffers.length
-    ? [
-        {
-          id: "current",
-          title: "Текущие звонки",
-          subtitle: "Записи за последние 24 часа",
-          items: sortOffers(currentOffers),
-          alwaysOpen: true
-        }
-      ]
-    : [];
+  groupedOffersMap[dateKey].push(offer);
+});
 
-  const archivedGroups = Object.entries(
-    archivedMap
-  )
-    .sort(([firstDate], [secondDate]) =>
-      secondDate.localeCompare(firstDate)
-    )
-    .map(([date, items]) => {
-      const sortedItems =
-        sortOffers(items);
+const offerGroups = Object.entries(
+  groupedOffersMap
+)
+  .sort(([firstDate], [secondDate]) => {
+    if (firstDate === "without-date") {
+      return 1;
+    }
 
-      const times = sortedItems
-        .map((offer) => offer.time)
-        .filter(Boolean)
-        .sort();
+    if (secondDate === "without-date") {
+      return -1;
+    }
 
-      const firstTime =
-        times[0] || "—";
+    return secondDate.localeCompare(
+      firstDate
+    );
+  })
+  .map(([date, groupItems]) => {
+    const sortedItems =
+      sortOffers(groupItems);
 
-      const lastTime =
-        times[times.length - 1] || "—";
+    const times = sortedItems
+      .map((offer) => offer.time)
+      .filter(Boolean)
+      .sort();
 
-      return {
-        id: date,
-        title:
-          date === "without-date"
-            ? "Без даты"
-            : formatPeriodDate(date),
+    const firstTime =
+      times[0] || "—";
 
-        subtitle:
-          firstTime === lastTime
-            ? `Время: ${firstTime}`
-            : `Период: ${firstTime}–${lastTime}`,
+    const lastTime =
+      times[times.length - 1] || "—";
 
-        items: sortedItems,
-        alwaysOpen: false
-      };
-    });
+    const newestTimestamp = Math.max(
+      ...sortedItems.map(
+        (offer) =>
+          getOfferTimestamp(offer) || 0
+      )
+    );
 
-  const mobileGroups = [
-    ...currentGroup,
-    ...archivedGroups
-  ];
+    const isRecent =
+      newestTimestamp > 0 &&
+      currentTimestamp -
+        newestTimestamp <
+        twentyFourHours;
+
+    return {
+      id: date,
+
+      title:
+        date === "without-date"
+          ? "Без даты"
+          : formatPeriodDate(date),
+
+      subtitle:
+        firstTime === lastTime
+          ? `Время звонка: ${firstTime}`
+          : `Период звонков: ${firstTime}–${lastTime}`,
+
+      items: sortedItems,
+
+      /*
+       * Записи младше 24 часов открыты.
+       * Старые даты пользователь раскрывает сам.
+       */
+      alwaysOpen: isRecent
+    };
+  });
 
   function togglePeriod(periodId) {
     setExpandedPeriods((current) => ({
@@ -1182,7 +1179,51 @@ function CommercialOffers({
       ) : (
         <>
           {/* Таблица для компьютеров */}
-          <div className="commercial-desktop-view">
+{/* Сгруппированные таблицы для компьютеров */}
+<div className="commercial-desktop-view">
+  <div className="commercial-desktop-groups">
+    {offerGroups.map((group) => {
+      const isExpanded =
+        group.alwaysOpen ||
+        expandedPeriods[group.id] === true;
+
+      return (
+        <section
+          className="commercial-desktop-period"
+          key={group.id}
+        >
+          <button
+            className="commercial-desktop-period__header"
+            type="button"
+            onClick={() => {
+              if (!group.alwaysOpen) {
+                togglePeriod(group.id);
+              }
+            }}
+          >
+            <span>
+              <strong>{group.title}</strong>
+              <small>{group.subtitle}</small>
+            </span>
+
+            <span className="commercial-desktop-period__meta">
+              <b>
+                {group.items.length}
+                {" "}
+                {group.items.length === 1
+                  ? "звонок"
+                  : "звонков"}
+              </b>
+
+              {!group.alwaysOpen && (
+                <i>
+                  {isExpanded ? "−" : "+"}
+                </i>
+              )}
+            </span>
+          </button>
+
+          {isExpanded && (
             <div className="commercial-table-scroll">
               <table className="commercial-table">
                 <thead>
@@ -1200,16 +1241,20 @@ function CommercialOffers({
                 </thead>
 
                 <tbody>
-                  {offers.map((offer) => (
+                  {group.items.map((offer) => (
                     <tr key={offer.id}>
                       <td>
                         <input
                           type="date"
                           value={offer.date || ""}
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              date: event.target.value
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                date:
+                                  event.target.value
+                              }
+                            )
                           }
                         />
                       </td>
@@ -1219,34 +1264,48 @@ function CommercialOffers({
                           type="time"
                           value={offer.time || ""}
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              time: event.target.value
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                time:
+                                  event.target.value
+                              }
+                            )
                           }
                         />
                       </td>
 
                       <td>
                         <input
-                          value={offer.dispatcher || ""}
+                          value={
+                            offer.dispatcher || ""
+                          }
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              dispatcher:
-                                event.target.value
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                dispatcher:
+                                  event.target.value
+                              }
+                            )
                           }
                         />
                       </td>
 
                       <td>
                         <input
-                          value={offer.company || ""}
+                          value={
+                            offer.company || ""
+                          }
                           placeholder="Название компании"
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              company:
-                                event.target.value
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                company:
+                                  event.target.value
+                              }
+                            )
                           }
                         />
                       </td>
@@ -1254,42 +1313,57 @@ function CommercialOffers({
                       <td>
                         <input
                           type="tel"
-                          value={offer.phone || "+7"}
+                          value={
+                            offer.phone || "+7"
+                          }
                           placeholder="+7 (900) 000-00-00"
                           maxLength={18}
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              phone:
-                                formatRussianPhone(
-                                  event.target.value
-                                )
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                phone:
+                                  formatRussianPhone(
+                                    event.target.value
+                                  )
+                              }
+                            )
                           }
                         />
                       </td>
 
                       <td>
                         <textarea
-                          value={offer.result || ""}
+                          value={
+                            offer.result || ""
+                          }
                           placeholder="Что ответили"
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              result:
-                                event.target.value
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                result:
+                                  event.target.value
+                              }
+                            )
                           }
                         />
                       </td>
 
                       <td>
                         <textarea
-                          value={offer.comment || ""}
+                          value={
+                            offer.comment || ""
+                          }
                           placeholder="Что сделать дальше"
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              comment:
-                                event.target.value
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                comment:
+                                  event.target.value
+                              }
+                            )
                           }
                         />
                       </td>
@@ -1303,10 +1377,13 @@ function CommercialOffers({
                             offer.status || "Новый"
                           }
                           onChange={(event) =>
-                            patchOffer(offer.id, {
-                              status:
-                                event.target.value
-                            })
+                            patchOffer(
+                              offer.id,
+                              {
+                                status:
+                                  event.target.value
+                              }
+                            )
                           }
                         >
                           <option>Новый</option>
@@ -1336,11 +1413,15 @@ function CommercialOffers({
                 </tbody>
               </table>
             </div>
-          </div>
-
+          )}
+        </section>
+      );
+    })}
+  </div>
+</div>
           {/* Компактные карточки для телефона */}
-          <div className="commercial-mobile-view">
-            {mobileGroups.map((group) => {
+<div className="commercial-mobile-view">
+  {offerGroups.map((group) => {
               const isExpanded =
                 group.alwaysOpen ||
                 expandedPeriods[group.id] === true;

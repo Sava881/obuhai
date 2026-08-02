@@ -15,27 +15,61 @@ import {
 import { db } from "../firebase/firebase";
 
 export function useCommercialOffers(userId) {
-  const [offers, setOffers] = useState([]);
+  const [offers, setOffersState] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState("");
 
   const loaded = useRef(false);
   const lastRemote = useRef("");
   const saveTimer = useRef(null);
+
+  /*
+   * Последняя актуальная локальная версия.
+   * Нужна, чтобы быстрый ввод не заменялся
+   * более старым снимком из Firebase.
+   */
+  const latestOffersRef = useRef([]);
+
+  /*
+   * Номер локального изменения.
+   * Каждое нажатие клавиши увеличивает его.
+   */
+  const changeVersionRef = useRef(0);
+
+  /*
+   * true — пока имеются изменения,
+   * ещё не подтверждённые последним сохранением.
+   */
   const localChangesPending = useRef(false);
 
-  const updateOffers = useCallback(
-    (nextValue) => {
-      localChangesPending.current = true;
-      setOffers(nextValue);
-    },
-    []
-  );
+  const setOffers = useCallback((nextValue) => {
+    localChangesPending.current = true;
+    changeVersionRef.current += 1;
+
+    setOffersState((currentOffers) => {
+      const resolvedOffers =
+        typeof nextValue === "function"
+          ? nextValue(currentOffers)
+          : nextValue;
+
+      const safeOffers = Array.isArray(resolvedOffers)
+        ? resolvedOffers
+        : [];
+
+      latestOffersRef.current = safeOffers;
+
+      return safeOffers;
+    });
+  }, []);
 
   useEffect(() => {
     if (!userId) {
       return undefined;
     }
+
+    loaded.current = false;
+    localChangesPending.current = false;
+    changeVersionRef.current = 0;
 
     const reference = doc(
       db,
@@ -49,22 +83,34 @@ export function useCommercialOffers(userId) {
       async (snapshot) => {
         try {
           if (snapshot.exists()) {
-            const nextOffers =
-              snapshot.data().items || [];
+            const nextOffers = Array.isArray(
+              snapshot.data().items
+            )
+              ? snapshot.data().items
+              : [];
 
             const serializedRemote =
               JSON.stringify(nextOffers);
 
+            /*
+             * Пока пользователь что-то вводит,
+             * серверный снимок не заменяет
+             * незавершённое локальное значение.
+             */
             if (!localChangesPending.current) {
               lastRemote.current =
                 serializedRemote;
 
-              setOffers(nextOffers);
+              latestOffersRef.current =
+                nextOffers;
+
+              setOffersState(nextOffers);
             }
           } else {
             const initial = [];
 
-            setOffers(initial);
+            latestOffersRef.current = initial;
+            setOffersState(initial);
 
             lastRemote.current =
               JSON.stringify(initial);
@@ -80,7 +126,11 @@ export function useCommercialOffers(userId) {
           loaded.current = true;
           setSyncError("");
         } catch (error) {
-          console.error(error);
+          console.error(
+            "Ошибка загрузки КП:",
+            error
+          );
+
           setSyncError(error.message);
         } finally {
           setLoading(false);
@@ -88,7 +138,11 @@ export function useCommercialOffers(userId) {
       },
 
       (error) => {
-        console.error(error);
+        console.error(
+          "Ошибка подписки на КП:",
+          error
+        );
+
         setSyncError(error.message);
         setLoading(false);
       }
@@ -106,16 +160,28 @@ export function useCommercialOffers(userId) {
     const serialized =
       JSON.stringify(offers);
 
-    if (
-      serialized === lastRemote.current
-    ) {
-      localChangesPending.current = false;
+    if (serialized === lastRemote.current) {
+      if (
+        JSON.stringify(latestOffersRef.current) ===
+        serialized
+      ) {
+        localChangesPending.current = false;
+      }
+
       return undefined;
     }
 
     clearTimeout(saveTimer.current);
 
-    saveTimer.current = setTimeout(
+    /*
+     * Запоминаем номер именно этой версии.
+     * Более старое сохранение не сможет снять
+     * флаг с более нового ввода.
+     */
+    const savingVersion =
+      changeVersionRef.current;
+
+    saveTimer.current = window.setTimeout(
       async () => {
         try {
           await setDoc(
@@ -134,25 +200,46 @@ export function useCommercialOffers(userId) {
             }
           );
 
-          lastRemote.current = serialized;
-          localChangesPending.current = false;
+          /*
+           * Сбрасываем ожидание только тогда,
+           * когда после начала сохранения
+           * пользователь ничего нового не ввёл.
+           */
+          if (
+            changeVersionRef.current ===
+            savingVersion
+          ) {
+            lastRemote.current = serialized;
+            localChangesPending.current = false;
+          }
+
           setSyncError("");
         } catch (error) {
-          console.error(error);
+          console.error(
+            "Ошибка сохранения КП:",
+            error
+          );
+
+          /*
+           * Не сбрасываем pending:
+           * введённый текст остаётся на экране.
+           */
           setSyncError(error.message);
         }
       },
-      500
+      700
     );
 
     return () => {
-      clearTimeout(saveTimer.current);
+      window.clearTimeout(
+        saveTimer.current
+      );
     };
   }, [offers, userId]);
 
   return {
     offers,
-    setOffers: updateOffers,
+    setOffers,
     loading,
     syncError
   };
