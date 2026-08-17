@@ -4,6 +4,8 @@ import { trainingModules } from "../data/training";
 import { useAuth } from "../contexts/AuthContext";
 import { useWorkspace } from "../hooks/useWorkspace";
 import { useCommercialOffers } from "../hooks/useCommercialOffers";
+import { useAdminTasks } from "../hooks/useAdminTasks";
+import TasksModal from "../components/tasks/TasksModal";
 
 const menu = [
   { id: "dashboard", label: "Главная", icon: "home" },
@@ -168,6 +170,7 @@ function formatRussianPhone(value) {
 function AdminWorkspace() {
   const { user, profile, logout } = useAuth();
   const [page, setPage] = useState("dashboard");
+  const [tasksOpen, setTasksOpen] = useState(false);
 
   const {
     clients,
@@ -176,14 +179,22 @@ function AdminWorkspace() {
     syncError
   } = useWorkspace(user.uid);
 
-  const {
-    offers,
-    setOffers,
-    loading: offersLoading,
-    syncError: offersSyncError
-  } = useCommercialOffers(user.uid);
+const {
+  offers,
+  setOffers,
+  loading: offersLoading,
+  syncError: offersSyncError
+} = useCommercialOffers(user.uid);
 
-  const [request, setRequest] = useState(emptyRequest);
+const {
+  tasks,
+  notes,
+  setTasks,
+  setNotes,
+  syncError: tasksSyncError
+} = useAdminTasks(user.uid);
+
+const [request, setRequest] = useState(emptyRequest);
   const [notice, setNotice] = useState("");
 
   function flash(text) {
@@ -271,7 +282,10 @@ function AdminWorkspace() {
         )}
 
 {page === "dashboard" && (
-  <Dashboard setPage={setPage} />
+  <Dashboard
+    setPage={setPage}
+    onOpenTasks={() => setTasksOpen(true)}
+  />
 )}
 {page === "training" && <Training />}
         {page === "request" && (
@@ -300,12 +314,23 @@ function AdminWorkspace() {
           />
         )}
 
+<TasksModal
+  open={tasksOpen}
+  onClose={() => setTasksOpen(false)}
+  tasks={tasks}
+  setTasks={setTasks}
+  notes={notes}
+  setNotes={setNotes}
+  administratorName={profile?.name || "Администратор"}
+  syncError={tasksSyncError}
+/>
+
       </main>
     </div>
   );
 }
 
-function Dashboard({ setPage }) {
+function Dashboard({ setPage, onOpenTasks }) {
   return (
     <>
       <section className="hero">
@@ -316,17 +341,29 @@ function Dashboard({ setPage }) {
             Приложение помогает администратору не забыть вопросы,
             правильно рассчитать цену и вести баланс заказчика.
           </p>
-          <div className="hero-actions">
-<button
-  className="primary"
-  onClick={() => setPage("training")}
->
-  Открыть шпаргалку
-</button>
-            <button className="secondary" onClick={() => setPage("calculator")}>
-              Открыть калькулятор
-            </button>
-          </div>
+<div className="hero-actions">
+  <button
+    className="primary"
+    onClick={() => setPage("training")}
+  >
+    Открыть шпаргалку
+  </button>
+
+  <button
+    className="secondary"
+    onClick={() => setPage("calculator")}
+  >
+    Открыть калькулятор
+  </button>
+
+  <button
+    className="secondary tasks-open-button"
+    type="button"
+    onClick={onOpenTasks}
+  >
+    Мои задачи
+  </button>
+</div>
         </div>
         <div className="workflow-card">
           {["Заявка", "Расчёт +15%", "Договор и счёт", "Предоплата", "Табель", "Акт"].map(
