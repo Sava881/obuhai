@@ -298,6 +298,49 @@
   font-size: 10px;
 }
 
+.task-phone-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.task-phone-number {
+  color: #4d5568;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.task-call-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+
+  background: #f0fdf4;
+  color: #15803d;
+
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+
+  transition:
+    transform .15s ease,
+    background .15s ease,
+    border-color .15s ease;
+}
+
+.task-call-button:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
 .task-priority {
   padding: 2px 6px;
   border-radius: 999px;
@@ -498,6 +541,16 @@
     grid-template-columns: 1fr;
     gap: 0;
   }
+
+.task-phone-row {
+  gap: 6px;
+}
+
+.task-call-button {
+  min-height: 27px;
+  padding: 0 9px;
+  font-size: 9px;
+}
 
   .task-item {
     grid-template-columns: 28px minmax(0,1fr) 26px;

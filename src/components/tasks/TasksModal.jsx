@@ -28,6 +28,7 @@ export default function TasksModal({
 }) {
   const [tab, setTab] = useState("tasks");
   const [taskTitle, setTaskTitle] = useState("");
+  const [taskPhone, setTaskPhone] = useState("");
   const [taskDate, setTaskDate] = useState(todayValue());
   const [taskPriority, setTaskPriority] = useState("Обычная");
   const [noteTitle, setNoteTitle] = useState("");
@@ -50,22 +51,24 @@ export default function TasksModal({
     const title = taskTitle.trim();
     if (!title) return;
 
-    setTasks((current) => [
-      {
-        id: makeId("task"),
-        title,
-        dueDate: taskDate,
-        priority: taskPriority,
-        completed: false,
-        createdAt: new Date().toISOString(),
-        completedAt: ""
-      },
-      ...current
-    ]);
+setTasks((current) => [
+  {
+    id: makeId("task"),
+    title,
+    phone: taskPhone.trim(),
+    dueDate: taskDate,
+    priority: taskPriority,
+    completed: false,
+    createdAt: new Date().toISOString(),
+    completedAt: ""
+  },
+  ...current
+]);
 
-    setTaskTitle("");
-    setTaskDate(todayValue());
-    setTaskPriority("Обычная");
+setTaskTitle("");
+setTaskPhone("");
+setTaskDate(todayValue());
+setTaskPriority("Обычная");
   }
 
   function toggleTask(id) {
@@ -110,15 +113,20 @@ export default function TasksModal({
   }
 
   function exportToExcel() {
-    const taskRows = tasks.map((item, index) => ({
-      "№": index + 1,
-      "Задача": item.title,
-      "Срок": formatDate(item.dueDate),
-      "Приоритет": item.priority,
-      "Статус": item.completed ? "Выполнена" : "В работе",
-      "Создана": item.createdAt ? new Date(item.createdAt).toLocaleString("ru-RU") : "",
-      "Выполнена": item.completedAt ? new Date(item.completedAt).toLocaleString("ru-RU") : ""
-    }));
+const taskRows = tasks.map((item, index) => ({
+  "№": index + 1,
+  "Задача": item.title,
+  "Телефон": item.phone || "",
+  "Срок": formatDate(item.dueDate),
+  "Приоритет": item.priority,
+  "Статус": item.completed ? "Выполнена" : "В работе",
+  "Создана": item.createdAt
+    ? new Date(item.createdAt).toLocaleString("ru-RU")
+    : "",
+  "Выполнена": item.completedAt
+    ? new Date(item.completedAt).toLocaleString("ru-RU")
+    : ""
+}));
 
     const noteRows = notes.map((item, index) => ({
       "№": index + 1,
@@ -131,9 +139,16 @@ export default function TasksModal({
     const tasksSheet = XLSX.utils.json_to_sheet(taskRows.length ? taskRows : [{ "Задача": "Нет задач" }]);
     const notesSheet = XLSX.utils.json_to_sheet(noteRows.length ? noteRows : [{ "Заметка": "Нет заметок" }]);
 
-    tasksSheet["!cols"] = [
-      { wch: 5 }, { wch: 42 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 20 }, { wch: 20 }
-    ];
+tasksSheet["!cols"] = [
+  { wch: 5 },
+  { wch: 42 },
+  { wch: 18 },
+  { wch: 14 },
+  { wch: 14 },
+  { wch: 14 },
+  { wch: 20 },
+  { wch: 20 }
+];
     notesSheet["!cols"] = [
       { wch: 5 }, { wch: 28 }, { wch: 70 }, { wch: 20 }
     ];
@@ -203,17 +218,30 @@ export default function TasksModal({
                   <h3>Что нужно сделать?</h3>
                 </div>
 
-                <label className="tasks-field tasks-field--wide">
-                  <span>Задача</span>
-                  <input
-                    value={taskTitle}
-                    onChange={(event) => setTaskTitle(event.target.value)}
-                    placeholder="Например: перезвонить заказчику"
-                    maxLength={160}
-                  />
-                </label>
+<label className="tasks-field tasks-field--wide">
+  <span>Задача</span>
+  <input
+    value={taskTitle}
+    onChange={(event) => setTaskTitle(event.target.value)}
+    placeholder="Например: перезвонить заказчику"
+    maxLength={160}
+  />
+</label>
 
-                <div className="tasks-form-row">
+<label className="tasks-field tasks-field--wide">
+  <span>Номер телефона</span>
+  <input
+    type="tel"
+    value={taskPhone}
+    onChange={(event) => setTaskPhone(event.target.value)}
+    placeholder="Например: +7 999 123-45-67"
+    inputMode="tel"
+    autoComplete="tel"
+    maxLength={30}
+  />
+</label>
+
+<div className="tasks-form-row">
                   <label className="tasks-field">
                     <span>Срок</span>
                     <input
@@ -267,13 +295,33 @@ export default function TasksModal({
                         aria-label="Отметить выполненной"
                       />
                       <div className="task-item__content">
-                        <strong>{item.title}</strong>
-                        <div className="task-meta">
-                          <span>{formatDate(item.dueDate)}</span>
-                          <span className={`task-priority task-priority--${item.priority.toLowerCase()}`}>
-                            {item.priority}
-                          </span>
-                        </div>
+<strong>{item.title}</strong>
+
+<div className="task-meta">
+  <span>{formatDate(item.dueDate)}</span>
+
+  <span
+    className={`task-priority task-priority--${item.priority.toLowerCase()}`}
+  >
+    {item.priority}
+  </span>
+</div>
+
+{item.phone && (
+  <div className="task-phone-row">
+    <span className="task-phone-number">
+      {item.phone}
+    </span>
+
+    <a
+      className="task-call-button"
+      href={`tel:${item.phone.replace(/[^\d+]/g, "")}`}
+      aria-label={`Позвонить по номеру ${item.phone}`}
+    >
+      Позвонить
+    </a>
+  </div>
+)}
                       </div>
                       <button className="task-delete" type="button" onClick={() => deleteTask(item.id)} aria-label="Удалить">
                         ×
@@ -295,10 +343,29 @@ export default function TasksModal({
                       >
                         ✓
                       </button>
-                      <div className="task-item__content">
-                        <strong>{item.title}</strong>
-                        <div className="task-meta"><span>{formatDate(item.dueDate)}</span></div>
-                      </div>
+<div className="task-item__content">
+  <strong>{item.title}</strong>
+
+  <div className="task-meta">
+    <span>{formatDate(item.dueDate)}</span>
+  </div>
+
+  {item.phone && (
+    <div className="task-phone-row">
+      <span className="task-phone-number">
+        {item.phone}
+      </span>
+
+      <a
+        className="task-call-button"
+        href={`tel:${item.phone.replace(/[^\d+]/g, "")}`}
+        aria-label={`Позвонить по номеру ${item.phone}`}
+      >
+        Позвонить
+      </a>
+    </div>
+  )}
+</div>
                       <button className="task-delete" type="button" onClick={() => deleteTask(item.id)} aria-label="Удалить">
                         ×
                       </button>
